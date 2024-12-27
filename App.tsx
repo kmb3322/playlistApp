@@ -1,94 +1,109 @@
 import * as React from 'react';
-import { Text, View, FlatList, StyleSheet, Image } from 'react-native';
+import { Text, View, FlatList, StyleSheet, Image, TouchableOpacity, Linking } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 // 음악 데이터 (예시로 JSON 파일에서 로드된 데이터로 가정)
+//require("./assets/images/gradation.jpg")
 const musicData = [
   {
-    title: "music1",
-    artist: "이적",
-    priority: 5,
-    cover: "https://via.placeholder.com/50x50?text=YJS"
+    title: "Gradation",
+    artist: "10cm",
+    priority: 1,
+    cover: require("./assets/images/gradation.jpg"),
+    youtubeUrl: "https://www.youtube.com/watch?v=fbmStVcCL8s&list=PLtmZj29rItKfvHjuY-ykhEiCC2EbBW2J1"
   },
   {
-    title: "music2",
-    artist: "거미",
-    priority: 4,
-    cover: "https://via.placeholder.com/50x50?text=KHD"
+    title: "한 페이지가 될 수 있게",
+    artist: "DAY6",
+    priority: 2,
+    cover: require("./assets/images/gradation.jpg"),
+    youtubeUrl: "https://www.youtube.com/watch?v=-9fC6oDFl5k&list=PLtmZj29rItKfvHjuY-ykhEiCC2EbBW2J1&index=2"
   },
   {
-    title: "music3",
-    artist: "아이유",
+    title: "사건의 지평선",
+    artist: "YOUNHA",
     priority: 3,
-    cover: "https://via.placeholder.com/50x50?text=LYJ"
+    cover: require("./assets/images/gradation.jpg"),
+    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
   },
   {
     title: "music4",
     artist: "폴킴",
-    priority: 2,
-    cover: "https://via.placeholder.com/50x50?text=KJK"
+    priority: 4,
+    cover: require("./assets/images/gradation.jpg"),
+    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
   },
   {
     title: "music5",
     artist: "아이유",
-    priority: 1,
-    cover: "https://via.placeholder.com/50x50?text=IU"
+    priority: 5,
+    cover: require("./assets/images/gradation.jpg"),
+    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
   },
   {
       title: "music6",
       artist: "아이유",
-      priority: 1,
-      cover: "https://via.placeholder.com/50x50?text=IU"
+      priority: 6,
+      cover: require("./assets/images/gradation.jpg"),
+      youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
   },
   {
     title: "music7",
     artist: "아이유",
-    priority: 1,
-    cover: "https://via.placeholder.com/50x50?text=IU"
+    priority: 7,
+    cover: require("./assets/images/gradation.jpg"),
+    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
   },
   {
     title: "music8",
     artist: "아이유",
-    priority: 1,
-    cover: "https://via.placeholder.com/50x50?text=IU"
+    priority: 8,
+    cover: require("./assets/images/gradation.jpg"),
+    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
   },
   {
     title: "music9",
     artist: "아이유",
-    priority: 1,
-    cover: "https://via.placeholder.com/50x50?text=IU"
+    priority: 9,
+    cover: require("./assets/images/gradation.jpg"),
+    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
   },
   {
     title: "music10",
     artist: "아이유",
-    priority: 1,
-    cover: "https://via.placeholder.com/50x50?text=IU"
+    priority: 10,
+    cover: require("./assets/images/gradation.jpg"),
+    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
   },
   {
     title: "music11",
     artist: "아이유",
-    priority: 1,
-    cover: "https://via.placeholder.com/50x50?text=IU"
+    priority: 11,
+    cover: require("./assets/images/gradation.jpg"),
+    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
   },
   {
     title: "music12",
     artist: "아이유",
-    priority: 1,
-    cover: "https://via.placeholder.com/50x50?text=IU"
+    priority: 12,
+    cover: require("./assets/images/gradation.jpg"),
+    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
   },
   {
     title: "music13",
     artist: "아이유",
-    priority: 1,
-    cover: "https://via.placeholder.com/50x50?text=IU"
+    priority: 13,
+    cover: require("./assets/images/gradation.jpg"),
+    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
   },
   {
     title: "music14",
     artist: "아이유",
-    priority: 1,
-    cover: "https://via.placeholder.com/50x50?text=IU"
+    priority: 14,
+    cover: require("./assets/images/gradation.jpg"),
+    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
   }
 ];
 
@@ -101,21 +116,28 @@ function HomeScreen() {
     setSongs(sortedSongs);
   }, []);
 
+  const handleMusicClick = (url) => {
+    Linking.openURL(url).catch((err) => {
+      console.error("Failed to open URL:", err);
+    });
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Music List</Text>
-
       <FlatList
         data={songs}
         keyExtractor={(item) => item.title}
         renderItem={({ item }) => (
-          <View style={styles.item}>
-            <Image source={{ uri: item.cover }} style={styles.albumCover} />
-            <View style={styles.textContainer}>
-              <Text style={styles.musicTitle}>{item.title}</Text>
-              <Text style={styles.musicArtist}>{item.artist}</Text>
+          <TouchableOpacity onPress={() => handleMusicClick(item.youtubeUrl)}>
+            <View style={styles.item}>
+              <Image source={item.cover } style={styles.albumCover} />
+              <View style={styles.textContainer}>
+                <Text style={styles.musicTitle}>{item.title}</Text>
+                <Text style={styles.musicArtist}>{item.artist}</Text>
+              </View>
             </View>
-          </View>
+          </TouchableOpacity>
         )}
       />
     </View>
