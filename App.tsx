@@ -1,9 +1,16 @@
 // Music List에 노래를 추가할 버튼을 추가한 코드
+
 import * as React from 'react';
 import { Text, View, FlatList, StyleSheet, Image, TouchableOpacity, Linking, TextInput, Alert, Button, Modal } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { Provider as PaperProvider } from 'react-native-paper'; // 추가
+
+// 스크린 import
+import HomeScreen from './screens/HomeScreen';
+import ProfileScreen from './screens/ProfileScreen';
+import SearchScreen from './screens/SearchScreen';
 
 // 음악 데이터 (예시로 JSON 파일에서 로드된 데이터로 가정)
 const musicData = [
@@ -105,10 +112,11 @@ const musicData = [
     cover: require("./assets/images/gradation.jpg"),
     youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
   }
+
 ];
 
 // Home 화면 컴포넌트
-function HomeScreen() {
+function HomeScreenComponent() {
   const [songs, setSongs] = React.useState([]);
   const [searchText, setSearchText] = React.useState('');
   const [isModalVisible, setIsModalVisible] = React.useState(false);
@@ -117,7 +125,7 @@ function HomeScreen() {
 
   // 데이터 정렬 및 상태 초기화
   React.useEffect(() => {
-    const sortedSongs = musicData.sort((a, b) => a.priority - b.priority);
+    const sortedSongs = [...musicData].sort((a, b) => b.priority - a.priority);
     setSongs(sortedSongs);
   }, []);
 
@@ -243,8 +251,9 @@ function SearchScreen() {
   );
 }
 
+
 // Profile 화면 컴포넌트
-function ProfileScreen() {
+function ProfileScreenComponent() {
   return (
     <View style={styles.container}>
       <Text>Profile Screen</Text>
@@ -257,37 +266,53 @@ const Tab = createBottomTabNavigator();
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <Tab.Navigator>
-        <Tab.Screen
-          name="Home"
-          component={HomeScreen}
-          options={{
-            tabBarIcon: ({ color, size }) => (
-              <Icon name="home" size={size} color={color} />
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="Search"
-          component={SearchScreen}
-          options={{
-            tabBarIcon: ({ color, size }) => (
-              <Icon name="search" size={size} color={color} />
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="Profile"
-          component={ProfileScreen}
-          options={{
-            tabBarIcon: ({ color, size }) => (
-              <Icon name="person" size={size} color={color} />
-            ),
-          }}
-        />
-      </Tab.Navigator>
-    </NavigationContainer>
+    <PaperProvider> {/* 추가 */}
+      <NavigationContainer>
+        <Tab.Navigator
+          screenOptions={({ route }) => ({
+            headerShown: false, // 헤더 제거
+            tabBarIcon: ({ color, size }) => {
+              let iconName = '';
+
+              if (route.name === 'Home') {
+                iconName = 'home';
+              } else if (route.name === 'Search') {
+                iconName = 'search';
+              } else if (route.name === 'Profile') {
+                iconName = 'person';
+              }
+
+              return <Icon name={iconName} size={size} color={color} />;
+            },
+            tabBarActiveTintColor: '#6200ee', // 활성 탭 색상
+            tabBarInactiveTintColor: 'gray', // 비활성 탭 색상
+            tabBarStyle: {
+              backgroundColor: '#FFFFFF', // 탭 바 배경색
+              borderTopWidth: 0,
+              elevation: 5, // Android 그림자
+            },
+          })}
+        >
+          {/* 'Home' 탭 */}
+          <Tab.Screen
+            name="Home"
+            component={HomeScreenComponent}
+          />
+
+          {/* 'Search' 탭 -> SearchScreen 사용 */}
+          <Tab.Screen
+            name="Search"
+            component={SearchScreen}
+          />
+
+          {/* 'Profile' 탭 */}
+          <Tab.Screen
+            name="Profile"
+            component={ProfileScreenComponent}
+          />
+        </Tab.Navigator>
+      </NavigationContainer>
+    </PaperProvider>
   );
 }
 
@@ -296,7 +321,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF', // 배경색 변경
   },
   headerContainer: {
     flexDirection: 'row',
@@ -327,6 +352,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingLeft: 10,
     borderRadius: 5,
+
   },
   item: {
     flexDirection: 'row',

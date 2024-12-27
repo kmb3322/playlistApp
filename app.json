@@ -1,4 +1,8 @@
 {
   "name": "playlist",
-  "displayName": "playlist"
+  "displayName": "playlist",
+  "expo": {
+    // ... other configurations
+    "jsEngine": "hermes"
+  }
 }
