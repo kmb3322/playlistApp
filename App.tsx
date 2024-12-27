@@ -1,11 +1,10 @@
 import * as React from 'react';
-import { Text, View, FlatList, StyleSheet, Image, TouchableOpacity, Linking } from 'react-native';
+import { Text, View, FlatList, StyleSheet, Image, TouchableOpacity, Linking, TextInput } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 // 음악 데이터 (예시로 JSON 파일에서 로드된 데이터로 가정)
-//require("./assets/images/gradation.jpg")
 const musicData = [
   {
     title: "Gradation",
@@ -110,12 +109,22 @@ const musicData = [
 // Home 화면 컴포넌트
 function HomeScreen() {
   const [songs, setSongs] = React.useState([]);
+  const [searchText, setSearchText] = React.useState('');  // 검색어 상태 추가
 
+  // 데이터 정렬 및 상태 초기화
   React.useEffect(() => {
     const sortedSongs = musicData.sort((a, b) => a.priority - b.priority);
     setSongs(sortedSongs);
   }, []);
 
+  // 검색어에 맞게 필터링된 음악 데이터
+  const filteredSongs = songs.filter(
+    (song) =>
+      song.title.toLowerCase().includes(searchText.toLowerCase()) ||
+      song.artist.toLowerCase().includes(searchText.toLowerCase())
+  );
+
+  // 유튜브 링크 열기
   const handleMusicClick = (url) => {
     Linking.openURL(url).catch((err) => {
       console.error("Failed to open URL:", err);
@@ -125,13 +134,23 @@ function HomeScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Music List</Text>
+
+      {/* 검색 입력란 */}
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Search music..."
+        value={searchText}
+        onChangeText={(text) => setSearchText(text)}  // 검색어 상태 업데이트
+      />
+
+      {/* 음악 리스트 출력 */}
       <FlatList
-        data={songs}
+        data={filteredSongs}
         keyExtractor={(item) => item.title}
         renderItem={({ item }) => (
           <TouchableOpacity onPress={() => handleMusicClick(item.youtubeUrl)}>
             <View style={styles.item}>
-              <Image source={item.cover } style={styles.albumCover} />
+              <Image source={item.cover} style={styles.albumCover} />
               <View style={styles.textContainer}>
                 <Text style={styles.musicTitle}>{item.title}</Text>
                 <Text style={styles.musicArtist}>{item.artist}</Text>
@@ -212,6 +231,14 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
+  },
+  searchInput: {
+    height: 40,
+    borderColor: '#ddd',
+    borderWidth: 1,
+    marginBottom: 20,
+    paddingLeft: 10,
+    borderRadius: 5,
   },
   item: {
     flexDirection: 'row',
