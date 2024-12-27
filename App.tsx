@@ -242,14 +242,7 @@ function HomeScreenComponent() {
 }
 
 
-// Search 화면 컴포넌트
-function SearchScreen() {
-  return (
-    <View style={styles.container}>
-      <Text>Search Screen</Text>
-    </View>
-  );
-}
+
 
 
 // Profile 화면 컴포넌트
