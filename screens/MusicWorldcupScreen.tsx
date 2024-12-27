@@ -7,114 +7,66 @@ import {
   Animated,
   PanResponder,
   Dimensions,
-  TouchableWithoutFeedback,
   TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import { Card, Title, Paragraph, useTheme } from 'react-native-paper';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation } from '@react-navigation/native';
+import { initialMusicList, Song } from '../data/musicData'; // 데이터 파일 불러오기
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SCREEN_HEIGHT = Dimensions.get('window').height;
-const SWIPE_THRESHOLD = 150; // 스와이프 감도 조절을 위한 Threshold 설정
-
-// 예시 데이터 (YouTube 비디오 ID 사용)
-const musicList = [
-  {
-    id: 1,
-    title: "IGOR's THEME",
-    artist: 'Tyler, The Creator',
-    youtubeId: '6S20mJvr4vs',
-  },
-  {
-    id: 2,
-    title: 'EARFQUAKE',
-    artist: 'Tyler, The Creator',
-    youtubeId: 't-E2gm0a_N0',
-  },
-  {
-    id: 3,
-    title: 'I THINK',
-    artist: 'Tyler, The Creator',
-    youtubeId: 'm91Vq-Yd3BA',
-  },
-    {
-    id: 4,
-    title: 'BOYFRIEND',
-    artist: 'Tyler, The Creator',
-    youtubeId: 'sOlNhcdlcB4',
-  },
-  {
-    id: 5,
-    title: 'EXACTLY WHAT YOU RUN FROM YOU END UP CHASING',
-    artist: 'Tyler, The Creator',
-    youtubeId: 'dqZ8vr_Q4UI',
-  },
-  {
-    id: 6,
-    title: 'RUNNING OUT OF TIME',
-    artist: 'Tyler, The Creator',
-    youtubeId: 'Uyf_lImpdRw',
-  },
-  {
-    id: 7,
-    title: 'NEW MAGIC WAND',
-    artist: 'Tyler, The Creator',
-    youtubeId: '2w8KUgIkAu8',
-  },
-  {
-      id: 8,
-      title: 'A BOI IS A GUN*',
-      artist: 'Tyler, The Creator',
-      youtubeId: 'McYy8pEniUc',
-    },
-  {
-    id: 9,
-    title: 'PUPPET',
-    artist: 'Tyler, The Creator',
-    youtubeId: 'OZzfUagtyPE',
-  },
-  {
-      id: 10,
-      title: "WHAT's GOOD",
-      artist: 'Tyler, The Creator',
-      youtubeId: '2w8KUgIkAu8',
-    },
-{
-      id: 11,
-      title: "GONE, GONE / THANK YOU",
-      artist: 'Tyler, The Creator',
-      youtubeId: 'pVInBRkoKgY',
-    },
-
-{
-      id: 12,
-      title: "I DON'T LOVE YOU ANYMORE",
-      artist: 'Tyler, The Creator',
-      youtubeId: 'ZJsJ07vk23o',
-    },
-{
-      id: 13,
-      title: "ARE WE STILL FRIENDS?",
-      artist: 'Tyler, The Creator',
-      youtubeId: 'Gb76TgCUqAY',
-    },
-
-  // 필요한 만큼 추가...
-];
+const SWIPE_THRESHOLD = 100; // 스와이프 감도 조절을 위한 Threshold 설정
 
 export default function MusicWorldcupScreen() {
   const navigation = useNavigation(); // 내비게이션 객체 가져오기
   const [currentIndex, setCurrentIndex] = useState(0);
-const [likedSongs, setLikedSongs] = useState<{ title: string }[]>([]);
+
+  // 음악 리스트를 상태로 관리하여 업데이트 가능하게 함
+  const [musicList, setMusicList] = useState<Song[]>(
+    initialMusicList.map(song => ({ ...song })) // 깊은 복사
+  );
+
   const position = useRef(new Animated.ValueXY()).current;
   const theme = useTheme(); // React Native Paper 테마 사용
 
   // YES, NO 라벨의 애니메이션을 위한 상태
   const [swipeDirection, setSwipeDirection] = useState<'YES' | 'NO' | null>(null);
 
-  // PanResponder 설정 (카드에만 적용)
+  // 스와이프 처리 함수 먼저 정의
+  const handleSwipe = (direction: 'YES' | 'NO', song: Song) => {
+    const toValue = direction === 'YES' ? SCREEN_WIDTH : -SCREEN_WIDTH;
+
+    Animated.timing(position, {
+      toValue: { x: toValue, y: 0 },
+      duration: 300,
+      useNativeDriver: false,
+    }).start(() => {
+      // 스와이프 후 위치 초기화
+      position.setValue({ x: 0, y: 0 });
+      setSwipeDirection(null);
+
+      // 음악 리스트 업데이트: id 기준으로 업데이트
+      setMusicList(prevList =>
+        prevList.map(item =>
+          item.id === song.id
+            ? {
+                ...item,
+                count: direction === 'YES' ? item.count + 1 : item.count,
+                isYES: direction === 'YES',
+              }
+            : item
+        )
+      );
+
+      // 다음 곡으로 넘어가기
+      setCurrentIndex(prevIndex => prevIndex + 1);
+    });
+  };
+
+  // PanResponder 설정 (handleSwipe가 이미 defined)
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gestureState) => {
@@ -137,7 +89,9 @@ const [likedSongs, setLikedSongs] = useState<{ title: string }[]>([]);
         }
       },
       onPanResponderRelease: (evt, gestureState) => {
-          const currentSong = musicList[currentIndex];
+        if (currentIndex >= musicList.length) return; // 인덱스 초과 방지
+
+        const currentSong = musicList[currentIndex];
         if (gestureState.dx > SWIPE_THRESHOLD) {
           // 오른쪽 스와이프 -> YES
           handleSwipe('YES', currentSong);
@@ -156,44 +110,20 @@ const [likedSongs, setLikedSongs] = useState<{ title: string }[]>([]);
     })
   ).current;
 
-  // 스와이프 처리 함수
-  const handleSwipe = (direction: 'YES' | 'NO', song: typeof musicList[0]) => {
-    const toValue = direction === 'YES' ? SCREEN_WIDTH : -SCREEN_WIDTH;
-
-    Animated.timing(position, {
-      toValue: { x: toValue, y: 0 },
-      duration: 300,
-      useNativeDriver: false,
-    }).start(() => {
-      // 스와이프 후 위치 초기화
-      position.setValue({ x: 0, y: 0 });
-      setSwipeDirection(null);
-
-      // YES인 경우 likedSongs에 추가
-      if (direction === 'YES') {
-        setLikedSongs((prev) => [...prev, { title: song.title }]);
-
-      }
-
-      // 다음 곡으로 넘어가기
-      setCurrentIndex((prevIndex) => prevIndex + 1);
-    });
-  };
-
   // 모든 곡을 스와이프했는지 체크
   const isFinished = currentIndex >= musicList.length;
 
   // 다음 트랙들을 얇게 표시하고 겹치도록 함
   const renderNextTracks = () => {
     return musicList
-      .slice(currentIndex + 1, currentIndex + 2) // 다음 2곡 표시
+      .slice(currentIndex + 1, currentIndex + 2) // 다음 1곡 표시
       .map((song, index) => (
         <Animated.View
           key={song.id}
           style={[
             styles.card,
             {
-              top: 10 * (index+1), // 약간 아래로
+              top: 10 * (index + 1), // 약간 아래로
             },
           ]}
         >
@@ -208,17 +138,26 @@ const [likedSongs, setLikedSongs] = useState<{ title: string }[]>([]);
   };
 
   // YouTube 영상 상태 변경 핸들러
-  const onStateChange = useCallback((state: string) => {
-    if (state === 'ended') {
-      const endedSong = musicList[currentIndex];
-      handleSwipe('YES', endedSong);
-    }
-  }, [currentIndex]);
+  const onStateChange = useCallback(
+    (state: string) => {
+      if (state === 'ended') {
+        if (currentIndex >= musicList.length) return; // 인덱스 초과 방지
+
+        const endedSong = musicList[currentIndex];
+        handleSwipe('YES', endedSong);
+      }
+    },
+    [currentIndex, musicList]
+  );
 
   // 배경색을 스와이프 방향에 따라 변경하는 Animated 값
   const backgroundColor = position.x.interpolate({
     inputRange: [-SCREEN_WIDTH, 0, SCREEN_WIDTH],
-    outputRange: ['rgba(244, 67, 54, 0.5)', 'rgba(255,255,255,1)', 'rgba(76, 175, 80, 0.5)'],
+    outputRange: [
+      'rgba(244, 67, 54, 0.5)', // Red for NO
+      'rgba(255,255,255,1)',    // White for neutral
+      'rgba(76, 175, 80, 0.5)', // Green for YES
+    ],
     extrapolate: 'clamp',
   });
 
@@ -232,7 +171,13 @@ const [likedSongs, setLikedSongs] = useState<{ title: string }[]>([]);
   // 월드컵 다시 시작 함수
   const restartWorldcup = () => {
     setCurrentIndex(0);
-    setLikedSongs([]);
+    setMusicList(prevList =>
+      prevList.map(song => ({
+        ...song,
+        isYES: false, // isYES 초기화
+        // count는 그대로 유지
+      }))
+    );
   };
 
   return (
@@ -254,15 +199,32 @@ const [likedSongs, setLikedSongs] = useState<{ title: string }[]>([]);
         <View style={styles.resultContainer}>
           <Text style={styles.resultText}>월드컵 종료!</Text>
           <Text style={styles.resultSubtitle}>내가 좋아한 곡들:</Text>
-          {likedSongs.length > 0 ? (
-                likedSongs.map((song, index) => (
-                  <Text key={index} style={styles.likedSong}>
-                    {index + 1}. {song.title}
+
+          {/* 좋아한 곡들을 스크롤 가능하게 표시 */}
+          <ScrollView style={styles.scrollView}>
+            {musicList.filter(song => song.isYES).length > 0 ? (
+              musicList
+                .filter(song => song.isYES)
+                .map((song, index) => (
+                  <Text key={song.id} style={styles.likedSong}>
+                    {index + 1}. {song.title} - {song.artist}
                   </Text>
                 ))
-              ) : (
-                <Text style={styles.likedSong}>좋아하는 곡이 없습니다.</Text>
-              )}
+            ) : (
+              <Text style={styles.likedSong}>좋아하는 곡이 없습니다.</Text>
+            )}
+          </ScrollView>
+
+          {/* 디버깅을 위한 전체 음악 리스트 출력 */}
+          <Text style={styles.debugTitle}>디버그 정보:</Text>
+          <ScrollView style={styles.debugScrollView}>
+            {musicList.map((song, index) => (
+              <Text key={song.id} style={styles.debugText}>
+                {index + 1}. {song.title} - {song.artist} | isYES: {song.isYES ? 'true' : 'false'} | count: {song.count}
+              </Text>
+            ))}
+          </ScrollView>
+
           {/* 뒤로가기 버튼 추가 */}
           <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.backButton}>
             <Text style={styles.backButtonText}>홈으로 돌아가기</Text>
@@ -278,7 +240,7 @@ const [likedSongs, setLikedSongs] = useState<{ title: string }[]>([]);
           {renderNextTracks()}
 
           {/* 현재 트랙 카드 */}
-          {musicList.slice(currentIndex, currentIndex + 1).map((song) => (
+          {musicList.slice(currentIndex, currentIndex + 1).map(song => (
             <Animated.View
               key={song.id}
               {...panResponder.panHandlers}
@@ -350,6 +312,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
+    width: '100%', // 가로 전체 사용
+    flex: 1, // 세로 공간 채우기
+  },
+  scrollView: {
+    width: '100%',
+    marginVertical: 10,
+    maxHeight: SCREEN_HEIGHT * 0.3, // 결과 리스트의 최대 높이 설정
+  },
+  debugTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  debugScrollView: {
+    width: '100%',
+    marginVertical: 10,
+    maxHeight: SCREEN_HEIGHT * 0.3, // 디버그 리스트의 최대 높이 설정
+    backgroundColor: '#f0f0f0',
+    padding: 10,
+    borderRadius: 10,
+  },
+  debugText: {
+    fontSize: 14,
+    marginVertical: 2,
   },
   resultText: {
     fontSize: 28,
