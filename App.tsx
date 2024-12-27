@@ -4,6 +4,7 @@ import { Text, View, FlatList, StyleSheet, Image } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { Provider as PaperProvider } from 'react-native-paper'; // 추가
 
 // 스크린 import
 import HomeScreen from './screens/HomeScreen';
@@ -89,51 +90,53 @@ const Tab = createBottomTabNavigator();
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <Tab.Navigator
-        screenOptions={({ route }) => ({
-          headerShown: false, // 헤더 제거
-          tabBarIcon: ({ color, size }) => {
-            let iconName = '';
+    <PaperProvider> {/* 추가 */}
+      <NavigationContainer>
+        <Tab.Navigator
+          screenOptions={({ route }) => ({
+            headerShown: false, // 헤더 제거
+            tabBarIcon: ({ color, size }) => {
+              let iconName = '';
 
-            if (route.name === 'Home') {
-              iconName = 'home';
-            } else if (route.name === 'Search') {
-              iconName = 'search';
-            } else if (route.name === 'Profile') {
-              iconName = 'person';
-            }
+              if (route.name === 'Home') {
+                iconName = 'home';
+              } else if (route.name === 'Search') {
+                iconName = 'search';
+              } else if (route.name === 'Profile') {
+                iconName = 'person';
+              }
 
-            return <Icon name={iconName} size={size} color={color} />;
-          },
-          tabBarActiveTintColor: '#000', // 활성화된 아이콘 색상
-          tabBarInactiveTintColor: 'gray', // 비활성화된 아이콘 색상
-          tabBarStyle: {
-            backgroundColor: '#FFFFFF', // 탭 바 배경색
-            borderTopWidth: 0,
-            elevation: 5, // 안드로이드 그림자
-          },
-        })}
-      >
-        {/* 'Home' 탭 */}
-        <Tab.Screen
-          name="Home"
-          component={HomeScreenComponent}
-        />
+              return <Icon name={iconName} size={size} color={color} />;
+            },
+            tabBarActiveTintColor: '#6200ee', // 활성 탭 색상
+            tabBarInactiveTintColor: 'gray', // 비활성 탭 색상
+            tabBarStyle: {
+              backgroundColor: '#FFFFFF', // 탭 바 배경색
+              borderTopWidth: 0,
+              elevation: 5, // Android 그림자
+            },
+          })}
+        >
+          {/* 'Home' 탭 */}
+          <Tab.Screen
+            name="Home"
+            component={HomeScreenComponent}
+          />
 
-        {/* 'Search' 탭 -> SearchScreen 사용 */}
-        <Tab.Screen
-          name="Search"
-          component={SearchScreen}
-        />
+          {/* 'Search' 탭 -> SearchScreen 사용 */}
+          <Tab.Screen
+            name="Search"
+            component={SearchScreen}
+          />
 
-        {/* 'Profile' 탭 */}
-        <Tab.Screen
-          name="Profile"
-          component={ProfileScreenComponent}
-        />
-      </Tab.Navigator>
-    </NavigationContainer>
+          {/* 'Profile' 탭 */}
+          <Tab.Screen
+            name="Profile"
+            component={ProfileScreenComponent}
+          />
+        </Tab.Navigator>
+      </NavigationContainer>
+    </PaperProvider>
   );
 }
 
@@ -142,7 +145,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF', // 배경색 변경
   },
   title: {
     fontSize: 24,
