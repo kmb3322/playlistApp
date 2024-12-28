@@ -1,5 +1,7 @@
 실행전, firebase 연결을 위해 다음 파일을 루트 디렉토리에 생성하세요.
 
+firestore db관리: https://console.firebase.google.com/u/0/project/theultimateplaylist-afba2/firestore/databases/-default-/data/~2Fsongs~2F3?hl=ko
+
 firebaseConfig.ts
 ```typeScript
 // Import the functions you need from the SDKs you need
