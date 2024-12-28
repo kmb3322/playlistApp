@@ -1,340 +1,494 @@
 // screens/MusicWorldcupScreen.tsx
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  Animated,
-  PanResponder,
   Dimensions,
-  TouchableWithoutFeedback,
   TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { Card, Title, Paragraph, useTheme } from 'react-native-paper';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation } from '@react-navigation/native';
+import { db } from '../firebaseConfig'; // Firebase 설정 파일
+import { collection, getDocs, updateDoc, doc } from 'firebase/firestore';
+import {
+  PanGestureHandler,
+  GestureHandlerRootView,
+} from 'react-native-gesture-handler';
+import Animated, {
+  useAnimatedGestureHandler,
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  interpolate,
+  interpolateColor,
+  runOnJS,
+} from 'react-native-reanimated';
+
+// 타입 정의
+export interface Song {
+  id: string;
+  title: string;
+  artist: string;
+  youtubeId: string;
+  count: number;
+  isYES: boolean;
+}
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SCREEN_HEIGHT = Dimensions.get('window').height;
-const SWIPE_THRESHOLD = 150; // 스와이프 감도 조절을 위한 Threshold 설정
+const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25; // 스와이프 감도 조절을 위한 Threshold 설정
 
-// 예시 데이터 (YouTube 비디오 ID 사용)
-const musicList = [
-  {
-    id: 1,
-    title: "IGOR's THEME",
-    artist: 'Tyler, The Creator',
-    youtubeId: '6S20mJvr4vs',
-  },
-  {
-    id: 2,
-    title: 'EARFQUAKE',
-    artist: 'Tyler, The Creator',
-    youtubeId: 't-E2gm0a_N0',
-  },
-  {
-    id: 3,
-    title: 'I THINK',
-    artist: 'Tyler, The Creator',
-    youtubeId: 'm91Vq-Yd3BA',
-  },
-    {
-    id: 4,
-    title: 'BOYFRIEND',
-    artist: 'Tyler, The Creator',
-    youtubeId: 'sOlNhcdlcB4',
-  },
-  {
-    id: 5,
-    title: 'EXACTLY WHAT YOU RUN FROM YOU END UP CHASING',
-    artist: 'Tyler, The Creator',
-    youtubeId: 'dqZ8vr_Q4UI',
-  },
-  {
-    id: 6,
-    title: 'RUNNING OUT OF TIME',
-    artist: 'Tyler, The Creator',
-    youtubeId: 'Uyf_lImpdRw',
-  },
-  {
-    id: 7,
-    title: 'NEW MAGIC WAND',
-    artist: 'Tyler, The Creator',
-    youtubeId: '2w8KUgIkAu8',
-  },
-  {
-      id: 8,
-      title: 'A BOI IS A GUN*',
-      artist: 'Tyler, The Creator',
-      youtubeId: 'McYy8pEniUc',
-    },
-  {
-    id: 9,
-    title: 'PUPPET',
-    artist: 'Tyler, The Creator',
-    youtubeId: 'OZzfUagtyPE',
-  },
-  {
-      id: 10,
-      title: "WHAT's GOOD",
-      artist: 'Tyler, The Creator',
-      youtubeId: '2w8KUgIkAu8',
-    },
-{
-      id: 11,
-      title: "GONE, GONE / THANK YOU",
-      artist: 'Tyler, The Creator',
-      youtubeId: 'pVInBRkoKgY',
-    },
+// 스택된 카드 컴포넌트
+const NextCard = ({ song, index }: { song: Song; index: number }) => {
+    const scale = useSharedValue(1 - 0.05 * index);
+  const translateY = useSharedValue(10 * index);
 
-{
-      id: 12,
-      title: "I DON'T LOVE YOU ANYMORE",
-      artist: 'Tyler, The Creator',
-      youtubeId: 'ZJsJ07vk23o',
-    },
-{
-      id: 13,
-      title: "ARE WE STILL FRIENDS?",
-      artist: 'Tyler, The Creator',
-      youtubeId: 'Gb76TgCUqAY',
-    },
+useEffect(() => {
+    scale.value = withSpring(1 - 0.05 * index, {
+      damping: 12,
+      stiffness: 100,
+    });
+    translateY.value = withSpring(10 * index, {
+      damping: 12,
+      stiffness: 100,
+    });
+  }, [index]);
 
-  // 필요한 만큼 추가...
-];
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: scale.value },
+      { translateY: translateY.value},
+    ],
+    zIndex: -index,
+  }));
+
+  return (
+    <Animated.View style={[styles.card, animatedStyle]}>
+      <Card>
+        <Card.Content>
+          <Title>{song.title}</Title>
+          <Paragraph>{song.artist}</Paragraph>
+        </Card.Content>
+      </Card>
+    </Animated.View>
+  );
+};
 
 export default function MusicWorldcupScreen() {
-  const navigation = useNavigation(); // 내비게이션 객체 가져오기
+  const navigation = useNavigation();
+  const theme = useTheme();
+
   const [currentIndex, setCurrentIndex] = useState(0);
-const [likedSongs, setLikedSongs] = useState<{ title: string }[]>([]);
-  const position = useRef(new Animated.ValueXY()).current;
-  const theme = useTheme(); // React Native Paper 테마 사용
+  const [musicList, setMusicList] = useState<Song[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [likedSongs, setLikedSongs] = useState<Song[]>([]);
+  const [swipeDecisions, setSwipeDecisions] = useState<
+    { songId: string; direction: 'YES' | 'NO' }[]
+  >([]);
 
-  // YES, NO 라벨의 애니메이션을 위한 상태
-  const [swipeDirection, setSwipeDirection] = useState<'YES' | 'NO' | null>(null);
 
-  // PanResponder 설정 (카드에만 적용)
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        // 터치가 약간이라도 드래그 되면 PanResponder 활성화
-        return (
-          Math.abs(gestureState.dx) > 10 ||
-          Math.abs(gestureState.dy) > 10
-        );
-      },
-      onPanResponderMove: (evt, gestureState) => {
-        position.setValue({ x: gestureState.dx, y: gestureState.dy });
+  // Firestore에서 음악 목록 가져오기
+  useEffect(() => {
+    const fetchSongs = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'songs'));
+        const songs: Song[] = [];
+        querySnapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          songs.push({
+            id: docSnap.id,
+            title: data.title,
+            artist: data.artist,
+            youtubeId: data.youtubeId,
+            count: data.count || 0,
+            isYES: data.isYES || false,
+          });
+        });
+        songs.sort((a, b) => a.title.localeCompare(b.title));
+        setMusicList(songs);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching songs:', error);
+        setLoading(false);
+      }
+    };
 
-        // 스와이프 방향에 따라 YES, NO 표시
-        if (gestureState.dx > 0) {
-          setSwipeDirection('YES');
-        } else if (gestureState.dx < 0) {
-          setSwipeDirection('NO');
-        } else {
-          setSwipeDirection(null);
-        }
-      },
-      onPanResponderRelease: (evt, gestureState) => {
-          const currentSong = musicList[currentIndex];
-        if (gestureState.dx > SWIPE_THRESHOLD) {
-          // 오른쪽 스와이프 -> YES
-          handleSwipe('YES', currentSong);
-        } else if (gestureState.dx < -SWIPE_THRESHOLD) {
-          // 왼쪽 스와이프 -> NO
-          handleSwipe('NO', currentSong);
-        } else {
-          // 제자리로 다시 돌아오기
-          Animated.spring(position, {
-            toValue: { x: 0, y: 0 },
-            useNativeDriver: false,
-            friction: 5,
-          }).start(() => setSwipeDirection(null));
-        }
-      },
-    })
-  ).current;
+    fetchSongs();
+  }, []);
 
-  // 스와이프 처리 함수
-  const handleSwipe = (direction: 'YES' | 'NO', song: typeof musicList[0]) => {
-    const toValue = direction === 'YES' ? SCREEN_WIDTH : -SCREEN_WIDTH;
+  // Firestore 업데이트 함수 (월드컵 종료 시 일괄 업데이트)
+  const updateFirestore = useCallback(async () => {
+    try {
+      const batchUpdates = swipeDecisions.map(decision => {
+        const songDocRef = doc(db, 'songs', decision.songId);
+        const song = musicList.find(song => song.id === decision.songId);
 
-    Animated.timing(position, {
-      toValue: { x: toValue, y: 0 },
-      duration: 300,
-      useNativeDriver: false,
-    }).start(() => {
-      // 스와이프 후 위치 초기화
-      position.setValue({ x: 0, y: 0 });
-      setSwipeDirection(null);
+              if (decision.direction === 'YES') {
+                return updateDoc(songDocRef, {
+                  count: song ? song.count + 1 : 1, // count를 +1
+                  isYES: true,
+                });
+              } else if (decision.direction === 'NO') {
+                return updateDoc(songDocRef, {
+                  count: song ? song.count : 0, // count를 그대로 유지
+                  isYES: false,
+                });
+              }
+        return Promise.resolve(); // NO일 경우 업데이트 필요 없음
+      });
+
+      await Promise.all(batchUpdates);
+      console.log('All swipes have been updated to Firestore.');
+    } catch (error) {
+      console.error('Error updating swipes to Firestore:', error);
+    }
+  }, [swipeDecisions, musicList]);
+
+  // 애니메이션 리셋 함수
+  const resetAnimation = useCallback(() => {
+    translateX.value = 0;
+    translateY.value = 0;
+    rotation.value = 0;
+    opacityYes.value = 0;
+    opacityNo.value = 0;
+    backgroundProgress.value = 0;
+  }, []);
+
+  // 스와이프 처리 함수 (결과를 로컬 상태에 저장)
+  const handleSwipe = useCallback(
+    (direction: 'YES' | 'NO') => {
+      if (currentIndex >= musicList.length) return;
+
+      const currentSong = musicList[currentIndex];
+      if (!currentSong) return;
+
+      // 스와이프 결정을 로컬 상태에 추가
+      setSwipeDecisions(prev => [...prev, { songId: currentSong.id, direction }]);
 
       // YES인 경우 likedSongs에 추가
       if (direction === 'YES') {
-        setLikedSongs((prev) => [...prev, { title: song.title }]);
-
+        setLikedSongs(prevLiked => {
+          const alreadyInLiked = prevLiked.some(song => song.id === currentSong.id);
+          if (!alreadyInLiked) {
+            return [...prevLiked, currentSong];
+          }
+          return prevLiked;
+        });
       }
 
       // 다음 곡으로 넘어가기
-      setCurrentIndex((prevIndex) => prevIndex + 1);
-    });
-  };
+      setCurrentIndex(prevIndex => prevIndex + 1);
+    },
+    [currentIndex, musicList]
+  );
+
+  // 월드컵 다시 시작 함수
+  const restartWorldcup = useCallback(async () => {
+    setCurrentIndex(0);
+    setLikedSongs([]);
+    setSwipeDecisions([]);
+
+    // Firestore 전체 초기화
+    try {
+      const resetList = musicList.map(song => ({
+        ...song,
+        isYES: false,
+        count: song.count, // count 유지
+
+      }));
+      setMusicList(resetList);
+
+      await Promise.all(
+        resetList.map(async song => {
+          const songDocRef = doc(db, 'songs', song.id);
+          await updateDoc(songDocRef, {
+            isYES: false,
+          });
+        })
+      );
+      console.log('All songs have been reset.');
+    } catch (error) {
+      console.error('Error resetting songs:', error);
+    }
+  }, [musicList]);
+
+  // YouTube 영상 상태 변경 핸들러
+  const onStateChange = useCallback(
+    (state: string) => {
+      if (state === 'ended') {
+        if (currentIndex >= musicList.length) return;
+        handleSwipe('YES');
+      }
+    },
+    [currentIndex, musicList, handleSwipe]
+  );
+
+  // 애니메이션을 위한 Shared Values
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const rotation = useSharedValue(0);
+  const opacityYes = useSharedValue(0);
+  const opacityNo = useSharedValue(0);
+  const backgroundProgress = useSharedValue(0);
+
+
+  // Gesture Handler
+  const gestureHandler = useAnimatedGestureHandler({
+    onStart: (_, ctx: any) => {
+      ctx.startX = translateX.value;
+      ctx.startY = translateY.value;
+    },
+    onActive: (event, ctx) => {
+      translateX.value = ctx.startX + event.translationX;
+      translateY.value = ctx.startY + event.translationY;
+      rotation.value = (translateX.value / SCREEN_WIDTH)*30;
+
+      // 배경 그라데이션을 위한 진행도 업데이트
+      backgroundProgress.value = Math.min(Math.abs(translateX.value) / SWIPE_THRESHOLD, 1);
+
+      // YES, NO 아이콘의 불투명도 설정
+      if (translateX.value > 0) {
+        opacityYes.value = interpolate(backgroundProgress.value, [0, 1], [0, 1]);
+        opacityNo.value = 0;
+      } else if (translateX.value < 0) {
+        opacityNo.value = interpolate(backgroundProgress.value, [0, 1], [0, 1]);
+        opacityYes.value = 0;
+      } else {
+        opacityYes.value = 0;
+        opacityNo.value = 0;
+      }
+    },
+    onEnd: () => {
+      if (translateX.value > SWIPE_THRESHOLD) {
+        // Swiped Right - YES
+        translateX.value = withSpring(SCREEN_WIDTH, {
+          damping: 20,
+          stiffness: 200,
+        }, () => {
+          runOnJS(handleSwipe)('YES');
+          runOnJS(resetAnimation)(); // runOnJS로 호출
+        });
+      } else if (translateX.value < -SWIPE_THRESHOLD) {
+        // Swiped Left - NO
+        translateX.value = withSpring(-SCREEN_WIDTH, {
+          damping: 20,
+          stiffness: 200,
+        }, () => {
+          runOnJS(handleSwipe)('NO');
+          runOnJS(resetAnimation)(); // runOnJS로 호출
+        });
+      } else {
+        // Return to original position
+        translateX.value = withSpring(0, {
+          damping: 20,
+          stiffness: 200,
+        });
+        translateY.value = withSpring(0, {
+          damping: 20,
+          stiffness: 200,
+        });
+        rotation.value = withSpring(0, {
+          damping: 20,
+          stiffness: 200,
+        });
+        opacityYes.value = withSpring(0, {
+          damping: 20,
+          stiffness: 200,
+        });
+        opacityNo.value = withSpring(0, {
+          damping: 20,
+          stiffness: 200,
+        });
+        backgroundProgress.value = withSpring(0, {
+          damping: 20,
+          stiffness: 200,
+        });
+      }
+    },
+  });
+
+  // Animated Styles
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+      { rotate: `${rotation.value}deg` },
+    ],
+  }));
+
+  const yesStyle = useAnimatedStyle(() => ({
+    opacity: opacityYes.value,
+     transform: [
+        { rotate: `${rotation.value}deg` },
+        ],
+  }));
+
+  const noStyle = useAnimatedStyle(() => ({
+    opacity: opacityNo.value,
+    transform: [
+            { rotate: `${rotation.value}deg` },
+            ],
+  }));
+
+  const backgroundStyle = useAnimatedStyle(() => {
+    const bgColor = interpolateColor(
+      backgroundProgress.value,
+      [0, 1],
+      ['rgba(255,255,255,1)', 'rgba(76, 175, 80, 0.5)'] // 초록색
+    );
+
+    const bgColorNo = interpolateColor(
+      backgroundProgress.value,
+      [0, 1],
+      ['rgba(255,255,255,1)', 'rgba(244, 67, 54, 0.5)'] // 빨간색
+    );
+
+    return {
+      backgroundColor:
+        translateX.value > 0
+          ? bgColor
+          : translateX.value < 0
+          ? bgColorNo
+          : 'rgba(255,255,255,1)',
+    };
+  });
 
   // 모든 곡을 스와이프했는지 체크
   const isFinished = currentIndex >= musicList.length;
+
+  // 스와이프 완료 시 Firestore 업데이트
+  useEffect(() => {
+    if (isFinished && swipeDecisions.length > 0) {
+      updateFirestore();
+    }
+  }, [isFinished, swipeDecisions, updateFirestore]);
 
   // 다음 트랙들을 얇게 표시하고 겹치도록 함
   const renderNextTracks = () => {
     return musicList
       .slice(currentIndex + 1, currentIndex + 2) // 다음 2곡 표시
       .map((song, index) => (
-        <Animated.View
-          key={song.id}
-          style={[
-            styles.card,
-            {
-              top: 10 * (index+1), // 약간 아래로
-            },
-          ]}
-        >
-          <Card>
-            <Card.Content>
-              <Title>{song.title}</Title>
-              <Paragraph>{song.artist}</Paragraph>
-            </Card.Content>
-          </Card>
-        </Animated.View>
+        <NextCard key={song.id} song={song} index={index} />
       ));
   };
 
-  // YouTube 영상 상태 변경 핸들러
-  const onStateChange = useCallback((state: string) => {
-    if (state === 'ended') {
-      const endedSong = musicList[currentIndex];
-      handleSwipe('YES', endedSong);
-    }
-  }, [currentIndex]);
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#6200ee" />
+        <Text>데이터 로딩 중...</Text>
+      </View>
+    );
+  }
 
-  // 배경색을 스와이프 방향에 따라 변경하는 Animated 값
-  const backgroundColor = position.x.interpolate({
-    inputRange: [-SCREEN_WIDTH, 0, SCREEN_WIDTH],
-    outputRange: ['rgba(244, 67, 54, 0.5)', 'rgba(255,255,255,1)', 'rgba(76, 175, 80, 0.5)'],
-    extrapolate: 'clamp',
-  });
-
-  // O/X 아이콘을 표시하기 위한 애니메이션
-  const rotate = position.x.interpolate({
-    inputRange: [-SCREEN_WIDTH, 0, SCREEN_WIDTH],
-    outputRange: ['-30deg', '0deg', '30deg'],
-    extrapolate: 'clamp',
-  });
-
-  // 월드컵 다시 시작 함수
-  const restartWorldcup = () => {
-    setCurrentIndex(0);
-    setLikedSongs([]);
-  };
+  const currentSong = musicList[currentIndex];
 
   return (
-    <Animated.View style={[styles.container, { backgroundColor }]}>
-      {/* YES, NO 아이콘을 화면 중앙에 표시 */}
-      {swipeDirection === 'YES' && (
-        <Animated.View style={[styles.iconContainer, { transform: [{ rotate }] }]}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Animated.View style={[styles.container, backgroundStyle]}>
+        {/* YES, NO 아이콘을 화면 중앙에 표시 */}
+        <Animated.View style={[styles.iconContainer, yesStyle, styles.iconYes]}>
           <Icon name="check-circle" size={100} color="green" />
         </Animated.View>
-      )}
-      {swipeDirection === 'NO' && (
-        <Animated.View style={[styles.iconContainer, { transform: [{ rotate }] }]}>
+        <Animated.View style={[styles.iconContainer, noStyle, styles.iconNo]}>
           <Icon name="times-circle" size={100} color="red" />
         </Animated.View>
-      )}
 
-      {isFinished ? (
-        // 결과 화면
-        <View style={styles.resultContainer}>
-          <Text style={styles.resultText}>월드컵 종료!</Text>
-          <Text style={styles.resultSubtitle}>내가 좋아한 곡들:</Text>
-          {likedSongs.length > 0 ? (
+        {isFinished ? (
+          // 결과 화면
+          <View style={styles.resultContainer}>
+            <Text style={styles.resultText}>월드컵 종료!</Text>
+            <Text style={styles.resultSubtitle}>내가 좋아한 곡들:</Text>
+
+            {/* likedSongs(스와이프 YES했던 곡들) 스크롤 표시 */}
+            <ScrollView style={styles.scrollView}>
+              {likedSongs.length > 0 ? (
                 likedSongs.map((song, index) => (
-                  <Text key={index} style={styles.likedSong}>
-                    {index + 1}. {song.title}
+                  <Text key={song.id} style={styles.likedSong}>
+                    {index + 1}. {song.title} - {song.artist} (count: {song.count})
                   </Text>
                 ))
               ) : (
                 <Text style={styles.likedSong}>좋아하는 곡이 없습니다.</Text>
               )}
-          {/* 뒤로가기 버튼 추가 */}
-          <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.backButton}>
-            <Text style={styles.backButtonText}>홈으로 돌아가기</Text>
-          </TouchableOpacity>
-          {/* 월드컵 다시 시작 버튼 추가 */}
-          <TouchableOpacity onPress={restartWorldcup} style={styles.restartButton}>
-            <Text style={styles.backButtonText}>다시 시작하기</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <>
-          {/* 다음 트랙들 표시 */}
-          {renderNextTracks()}
+            </ScrollView>
 
-          {/* 현재 트랙 카드 */}
-          {musicList.slice(currentIndex, currentIndex + 1).map((song) => (
-            <Animated.View
-              key={song.id}
-              {...panResponder.panHandlers}
-              style={[
-                styles.card,
-                {
-                  backgroundColor: '#FFFFFF', // 카드 색상 순백색으로 변경
-                  borderRadius: 20, // 곡률 20으로 조정
-                  height: SCREEN_HEIGHT * 0.7, // 화면 하단까지 완전히 덮지 않도록 높이 조정
-                  transform: [
-                    { translateX: position.x },
-                    { translateY: position.y },
-                    {
-                      rotate: position.x.interpolate({
-                        inputRange: [-SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2],
-                        outputRange: ['-10deg', '0deg', '10deg'],
-                        extrapolate: 'clamp',
-                      }),
-                    },
-                  ],
-                },
-              ]}
-            >
-              <Card style={styles.paperCard}>
-                <Card.Content>
-                  <Title style={styles.cardTitle}>{song.title}</Title>
-                  <Paragraph style={styles.cardArtist}>{song.artist}</Paragraph>
-                </Card.Content>
-
-                {/* YouTube 영상을 재생하는 YoutubePlayer 컴포넌트 */}
-                <View style={styles.youtubeContainer}>
-                  <YoutubePlayer
-                    height={200}
-                    play={true}
-                    videoId={song.youtubeId}
-                    onChangeState={onStateChange}
-                    webViewStyle={{ opacity: 0.99 }} // iOS에서 WebView 깜빡임 방지
-                  />
-                </View>
-
-                <Text style={styles.instructionText}>
-                  화면을 좌/우로 스와이프하여 Yes/No를 결정하세요.
+            {/* 디버깅을 위한 전체 음악 리스트 출력 */}
+            <Text style={styles.debugTitle}>디버그 정보:</Text>
+            <ScrollView style={styles.debugScrollView}>
+              {musicList.map((song, index) => (
+                <Text key={song.id} style={styles.debugText}>
+                  {index + 1}. {song.title} - {song.artist} | isYES: {song.isYES ? 'true' : 'false'} | count: {song.count} | id: {song.id}
                 </Text>
-              </Card>
-            </Animated.View>
-          ))}
-        </>
-      )}
-    </Animated.View>
+              ))}
+            </ScrollView>
+
+            {/* 현재 인덱스 및 현재 노래 제목 표시 */}
+            <Text style={styles.debugText}>
+              현재 인덱스: {currentIndex} | 현재 노래 제목: {currentSong ? currentSong.title : '없음'}
+            </Text>
+
+            {/* 뒤로가기 버튼 추가 */}
+            <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.backButton}>
+              <Text style={styles.backButtonText}>홈으로 돌아가기</Text>
+            </TouchableOpacity>
+            {/* 월드컵 다시 시작 버튼 추가 */}
+            <TouchableOpacity onPress={restartWorldcup} style={styles.restartButton}>
+              <Text style={styles.backButtonText}>다시 시작하기</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+            {/* 다음 트랙들 표시 */}
+            {renderNextTracks()}
+
+            {/* 현재 트랙 카드 */}
+            <PanGestureHandler onGestureEvent={gestureHandler}>
+              <Animated.View style={[styles.card, animatedStyle]}>
+                <Card style={styles.paperCard}>
+                  <Card.Content>
+                    <Title style={styles.cardTitle}>{currentSong.title}</Title>
+                    <Paragraph style={styles.cardArtist}>{currentSong.artist}</Paragraph>
+                  </Card.Content>
+
+                  {/* YouTube 영상을 재생하는 YoutubePlayer 컴포넌트 */}
+                  <View style={styles.youtubeContainer}>
+                    <YoutubePlayer
+                      height={200}
+                      play={true}
+                      videoId={currentSong.youtubeId}
+                      onChangeState={onStateChange}
+                      webViewStyle={{ opacity: 0.99 }} // iOS에서 WebView 깜빡임 방지
+                    />
+                  </View>
+
+                  <Text style={styles.instructionText}>
+                    화면을 좌/우로 스와이프하여 Yes/No를 결정하세요.
+                  </Text>
+
+                  {/* 디버깅 정보: 현재 아이디, 인덱스, 제목 */}
+                  <Text style={styles.debugText}>
+                    현재 아이디: {currentSong.id} | 현재 인덱스: {currentIndex} | 현재 노래 제목: {currentSong.title}
+                  </Text>
+                </Card>
+              </Animated.View>
+            </PanGestureHandler>
+          </>
+        )}
+      </Animated.View>
+    </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF', // 초기 배경색
+    // backgroundColor은 Animated.View에서 설정
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -344,12 +498,38 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
-    zIndex: 0, // 카드 아래에 표시되도록 설정
+    zIndex: 1, // 카드 위에 표시되도록 설정
   },
+
   resultContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
+    width: '100%', // 가로 전체 사용
+    flex: 1, // 세로 공간 채우기
+  },
+  scrollView: {
+    width: '100%',
+    marginVertical: 10,
+    maxHeight: SCREEN_HEIGHT * 0.3, // 결과 리스트의 최대 높이 설정
+  },
+  debugTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  debugScrollView: {
+    width: '100%',
+    marginVertical: 10,
+    maxHeight: SCREEN_HEIGHT * 0.3, // 디버그 리스트의 최대 높이 설정
+    backgroundColor: '#f0f0f0',
+    padding: 10,
+    borderRadius: 10,
+  },
+  debugText: {
+    fontSize: 14,
+    marginVertical: 2,
   },
   resultText: {
     fontSize: 28,
@@ -395,6 +575,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5, // Android 그림자
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    height: SCREEN_HEIGHT * 0.7,
   },
   paperCard: {
     borderRadius: 20, // 카드 곡률
@@ -422,5 +605,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#888',
     textAlign: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
