@@ -14,7 +14,7 @@ import YoutubePlayer from 'react-native-youtube-iframe';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation } from '@react-navigation/native';
 import { db } from '../firebaseConfig'; // Firebase 설정 파일
-import { collection, getDocs, updateDoc, doc } from 'firebase/firestore';
+import { collection, getDocs, updateDoc, doc, query, orderBy } from 'firebase/firestore';
 import {
   PanGestureHandler,
   GestureHandlerRootView,
@@ -27,6 +27,8 @@ import Animated, {
   interpolate,
   interpolateColor,
   runOnJS,
+  withDelay,
+  withSequence,
 } from 'react-native-reanimated';
 
 // 타입 정의
@@ -39,31 +41,47 @@ export interface Song {
   isYES: boolean;
 }
 
+interface MusicWorldcupScreenProps {
+  categoryId: string;
+  onClose: () => void;
+}
+
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25; // 스와이프 감도 조절을 위한 Threshold 설정
 
 // 스택된 카드 컴포넌트
 const NextCard = ({ song, index }: { song: Song; index: number }) => {
-    const scale = useSharedValue(1 - 0.05 * index);
+  const scale = useSharedValue(1 - 0.05 * index);
   const translateY = useSharedValue(10 * index);
+  const opacity = useSharedValue(0);
 
-useEffect(() => {
-    scale.value = withSpring(1 - 0.05 * index, {
-      damping: 12,
-      stiffness: 100,
-    });
-    translateY.value = withSpring(10 * index, {
-      damping: 12,
-      stiffness: 100,
-    });
-  }, [index]);
+  useEffect(() => {
+    const animationDelay = index * 100; // 100ms per index
+
+
+    translateY.value = withDelay(
+      animationDelay,
+      withSpring(10 * index, {
+        damping: 12,
+        stiffness: 100,
+      })
+    );
+    opacity.value = withDelay(
+      animationDelay,
+      withSpring(1, {
+        damping: 12,
+        stiffness: 100,
+      })
+    );
+  }, [index, scale, translateY, opacity]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
       { scale: scale.value },
-      { translateY: translateY.value},
+      { translateY: translateY.value },
     ],
+    opacity: opacity.value,
     zIndex: -index,
   }));
 
@@ -79,7 +97,7 @@ useEffect(() => {
   );
 };
 
-export default function MusicWorldcupScreen() {
+export default function MusicWorldcupScreen({ categoryId, onClose }: MusicWorldcupScreenProps) {
   const navigation = useNavigation();
   const theme = useTheme();
 
@@ -91,12 +109,13 @@ export default function MusicWorldcupScreen() {
     { songId: string; direction: 'YES' | 'NO' }[]
   >([]);
 
-
   // Firestore에서 음악 목록 가져오기
   useEffect(() => {
     const fetchSongs = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, 'songs'));
+        const songsCollection = collection(db, 'categories', categoryId, 'songs');
+        const q = query(songsCollection, orderBy('id', 'asc'));
+        const querySnapshot = await getDocs(q);
         const songs: Song[] = [];
         querySnapshot.forEach(docSnap => {
           const data = docSnap.data();
@@ -119,44 +138,49 @@ export default function MusicWorldcupScreen() {
     };
 
     fetchSongs();
-  }, []);
+  }, [categoryId]);
 
   // Firestore 업데이트 함수 (월드컵 종료 시 일괄 업데이트)
   const updateFirestore = useCallback(async () => {
     try {
       const batchUpdates = swipeDecisions.map(decision => {
-        const songDocRef = doc(db, 'songs', decision.songId);
+        const songDocRef = doc(db, 'categories', categoryId, 'songs', decision.songId);
         const song = musicList.find(song => song.id === decision.songId);
 
-              if (decision.direction === 'YES') {
-                return updateDoc(songDocRef, {
-                  count: song ? song.count + 1 : 1, // count를 +1
-                  isYES: true,
-                });
-              } else if (decision.direction === 'NO') {
-                return updateDoc(songDocRef, {
-                  count: song ? song.count : 0, // count를 그대로 유지
-                  isYES: false,
-                });
-              }
+        if (decision.direction === 'YES') {
+          return updateDoc(songDocRef, {
+            count: song ? song.count + 1 : 1, // count를 +1
+            isYES: true,
+          });
+        } else if (decision.direction === 'NO') {
+          return updateDoc(songDocRef, {
+            count: song ? song.count : 0, // count를 그대로 유지
+            isYES: false,
+          });
+        }
         return Promise.resolve(); // NO일 경우 업데이트 필요 없음
       });
 
       await Promise.all(batchUpdates);
-      console.log('All swipes have been updated to Firestore.');
+      console.log('모든 스와이프가 Firestore에 업데이트되었습니다.');
     } catch (error) {
-      console.error('Error updating swipes to Firestore:', error);
+      console.error('Firestore 업데이트 오류:', error);
     }
-  }, [swipeDecisions, musicList]);
+  }, [swipeDecisions, musicList, categoryId]);
 
   // 애니메이션 리셋 함수
   const resetAnimation = useCallback(() => {
     translateX.value = 0;
     translateY.value = 0;
     rotation.value = 0;
-    opacityYes.value = 0;
-    opacityNo.value = 0;
-    backgroundProgress.value = 0;
+    opacityYes.value = withSpring(0, { damping: 20, stiffness: 200 });
+    opacityNo.value = withSpring(0, { damping: 20, stiffness: 200 });
+    backgroundProgress.value = withSpring(0, { damping: 20, stiffness: 200 });
+
+    scale.value = withSequence(
+        withSpring(1.1, { damping: 20, stiffness: 200 }), // 10% 커짐
+        withSpring(1, { damping: 20, stiffness: 200 })    // 원래 크기로 돌아감
+      );
   }, []);
 
   // 스와이프 처리 함수 (결과를 로컬 상태에 저장)
@@ -199,23 +223,22 @@ export default function MusicWorldcupScreen() {
         ...song,
         isYES: false,
         count: song.count, // count 유지
-
       }));
       setMusicList(resetList);
 
       await Promise.all(
         resetList.map(async song => {
-          const songDocRef = doc(db, 'songs', song.id);
+          const songDocRef = doc(db, 'categories', categoryId, 'songs', song.id);
           await updateDoc(songDocRef, {
             isYES: false,
           });
         })
       );
-      console.log('All songs have been reset.');
+      console.log('모든 곡이 초기화되었습니다.');
     } catch (error) {
-      console.error('Error resetting songs:', error);
+      console.error('곡 초기화 오류:', error);
     }
-  }, [musicList]);
+  }, [musicList, categoryId]);
 
   // YouTube 영상 상태 변경 핸들러
   const onStateChange = useCallback(
@@ -235,6 +258,7 @@ export default function MusicWorldcupScreen() {
   const opacityYes = useSharedValue(0);
   const opacityNo = useSharedValue(0);
   const backgroundProgress = useSharedValue(0);
+  const scale = useSharedValue(1);
 
 
   // Gesture Handler
@@ -246,7 +270,7 @@ export default function MusicWorldcupScreen() {
     onActive: (event, ctx) => {
       translateX.value = ctx.startX + event.translationX;
       translateY.value = ctx.startY + event.translationY;
-      rotation.value = (translateX.value / SCREEN_WIDTH)*30;
+      rotation.value = (translateX.value / SCREEN_WIDTH) * 30;
 
       // 배경 그라데이션을 위한 진행도 업데이트
       backgroundProgress.value = Math.min(Math.abs(translateX.value) / SWIPE_THRESHOLD, 1);
@@ -266,48 +290,20 @@ export default function MusicWorldcupScreen() {
     onEnd: () => {
       if (translateX.value > SWIPE_THRESHOLD) {
         // Swiped Right - YES
-        translateX.value = withSpring(SCREEN_WIDTH, {
-          damping: 20,
-          stiffness: 200,
-        }, () => {
-          runOnJS(handleSwipe)('YES');
-          runOnJS(resetAnimation)(); // runOnJS로 호출
-        });
+        runOnJS(handleSwipe)('YES');
+        runOnJS(resetAnimation)();
       } else if (translateX.value < -SWIPE_THRESHOLD) {
         // Swiped Left - NO
-        translateX.value = withSpring(-SCREEN_WIDTH, {
-          damping: 20,
-          stiffness: 200,
-        }, () => {
-          runOnJS(handleSwipe)('NO');
-          runOnJS(resetAnimation)(); // runOnJS로 호출
-        });
+        runOnJS(handleSwipe)('NO');
+        runOnJS(resetAnimation)();
       } else {
-        // Return to original position
-        translateX.value = withSpring(0, {
-          damping: 20,
-          stiffness: 200,
-        });
-        translateY.value = withSpring(0, {
-          damping: 20,
-          stiffness: 200,
-        });
-        rotation.value = withSpring(0, {
-          damping: 20,
-          stiffness: 200,
-        });
-        opacityYes.value = withSpring(0, {
-          damping: 20,
-          stiffness: 200,
-        });
-        opacityNo.value = withSpring(0, {
-          damping: 20,
-          stiffness: 200,
-        });
-        backgroundProgress.value = withSpring(0, {
-          damping: 20,
-          stiffness: 200,
-        });
+        // 원래 위치로 복귀
+        translateX.value = withSpring(0, { damping: 20, stiffness: 200 });
+        translateY.value = withSpring(0, { damping: 20, stiffness: 200 });
+        rotation.value = withSpring(0, { damping: 20, stiffness: 200 });
+        opacityYes.value = withSpring(0, { damping: 20, stiffness: 200 });
+        opacityNo.value = withSpring(0, { damping: 20, stiffness: 200 });
+        backgroundProgress.value = withSpring(0, { damping: 20, stiffness: 200 });
       }
     },
   });
@@ -323,16 +319,16 @@ export default function MusicWorldcupScreen() {
 
   const yesStyle = useAnimatedStyle(() => ({
     opacity: opacityYes.value,
-     transform: [
-        { rotate: `${rotation.value}deg` },
-        ],
+    transform: [
+      { rotate: `${rotation.value}deg` },
+    ],
   }));
 
   const noStyle = useAnimatedStyle(() => ({
     opacity: opacityNo.value,
     transform: [
-            { rotate: `${rotation.value}deg` },
-            ],
+      { rotate: `${rotation.value}deg` },
+    ],
   }));
 
   const backgroundStyle = useAnimatedStyle(() => {
@@ -371,9 +367,9 @@ export default function MusicWorldcupScreen() {
   // 다음 트랙들을 얇게 표시하고 겹치도록 함
   const renderNextTracks = () => {
     return musicList
-      .slice(currentIndex + 1, currentIndex + 2) // 다음 2곡 표시
+      .slice(currentIndex + 1, currentIndex + 2) // 다음 1곡 표시
       .map((song, index) => (
-        <NextCard key={song.id} song={song} index={index} />
+        <NextCard key={song.id} song={song} index={index + 1} />
       ));
   };
 
@@ -434,7 +430,7 @@ export default function MusicWorldcupScreen() {
             </Text>
 
             {/* 뒤로가기 버튼 추가 */}
-            <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.backButton}>
+            <TouchableOpacity onPress={onClose} style={styles.backButton}>
               <Text style={styles.backButtonText}>홈으로 돌아가기</Text>
             </TouchableOpacity>
             {/* 월드컵 다시 시작 버튼 추가 */}
