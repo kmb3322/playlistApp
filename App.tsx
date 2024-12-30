@@ -1,3 +1,5 @@
+// Music List에 노래를 추가할 버튼을 추가한 코드
+
 import * as React from 'react';
 import { Text, View, FlatList, StyleSheet, Image, TouchableOpacity, Linking, TextInput, Alert, Button, Modal, Animated } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -10,6 +12,7 @@ import { Swipeable, GestureHandlerRootView } from 'react-native-gesture-handler'
 import HomeScreen from './screens/HomeScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import SearchScreen from './screens/SearchScreen';
+
 
 // 음악 데이터 (예시로 JSON 파일에서 로드된 데이터로 가정)
 const musicData = [
@@ -324,14 +327,11 @@ function HomeScreenComponent() {
   );
 }
 
-// Profile 화면 컴포넌트
-function ProfileScreenComponent() {
-  return (
-    <View style={styles.container}>
-      <Text>Profile Screen</Text>
-    </View>
-  );
-}
+
+
+
+
+
 
 // Bottom Tabs 생성
 const Tab = createBottomTabNavigator();
@@ -381,7 +381,7 @@ export default function App() {
             {/* 'Profile' 탭 */}
             <Tab.Screen
               name="Profile"
-              component={ProfileScreenComponent}
+              component={ProfileScreen}
             />
           </Tab.Navigator>
         </NavigationContainer>
