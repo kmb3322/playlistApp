@@ -85,7 +85,9 @@ export default function SearchScreen() {
   // Render the list of categories for selection
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>월드컵을 진행할 카테고리 선택</Text>
+      <Text style={styles.title}>어떤 플레이리스트로</Text>
+      <Text style={styles.title2}>음악 월드컵을 진행할까요?</Text>
+
       <FlatList
         data={categories}
         keyExtractor={(item) => item.id}
@@ -101,20 +103,27 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#f5f5f5',
     alignItems: 'center',
   },
   title: {
     fontSize: 22,
-    marginBottom: 20,
+    marginTop: 20,
+    marginBottom: 10,
     fontWeight: 'bold',
     textAlign: 'center',
   },
+  title2: {
+      fontSize: 22,
+      marginBottom: 50,
+      fontWeight: 'bold',
+      textAlign: 'center',
+    },
   collectionButton: {
-    backgroundColor: '#6200ee',
+    backgroundColor: '#FFFFFF',
     paddingVertical: 15,
     paddingHorizontal: 25,
-    borderRadius: 10,
+    borderRadius: 20,
     marginVertical: 10,
     width: '100%',
     alignItems: 'center',

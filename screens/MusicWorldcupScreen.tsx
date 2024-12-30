@@ -29,6 +29,8 @@ import Animated, {
   runOnJS,
   withDelay,
   withSequence,
+  withTiming,
+  Easing,
 } from 'react-native-reanimated';
 
 // 타입 정의
@@ -52,28 +54,28 @@ const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.25; // 스와이프 감도 조절을 �
 
 // 스택된 카드 컴포넌트
 const NextCard = ({ song, index }: { song: Song; index: number }) => {
-  const scale = useSharedValue(1 - 0.05 * index);
+  const scale = useSharedValue(1 - 0.5 * index);
   const translateY = useSharedValue(10 * index);
   const opacity = useSharedValue(0);
 
   useEffect(() => {
-    const animationDelay = index * 100; // 100ms per index
+    const animationDelay = index * 200;
 
 
     translateY.value = withDelay(
-      animationDelay,
-      withSpring(10 * index, {
-        damping: 12,
-        stiffness: 100,
-      })
-    );
-    opacity.value = withDelay(
-      animationDelay,
-      withSpring(1, {
-        damping: 12,
-        stiffness: 100,
-      })
-    );
+        animationDelay,
+        withTiming(10 * index, {
+          duration: 500, // 애니메이션 지속 시간
+          easing: Easing.out(Easing.ease),
+        })
+      );
+      opacity.value = withDelay(
+        animationDelay,
+        withTiming(1, {
+          duration: 500,
+          easing: Easing.out(Easing.ease),
+        })
+      );
   }, [index, scale, translateY, opacity]);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -132,7 +134,7 @@ export default function MusicWorldcupScreen({ categoryId, onClose }: MusicWorldc
         setMusicList(songs);
         setLoading(false);
       } catch (error) {
-        console.error('Error fetching songs:', error);
+        // console.error('Error fetching songs:', error);
         setLoading(false);
       }
     };
@@ -162,9 +164,9 @@ export default function MusicWorldcupScreen({ categoryId, onClose }: MusicWorldc
       });
 
       await Promise.all(batchUpdates);
-      console.log('모든 스와이프가 Firestore에 업데이트되었습니다.');
+      // console.log('모든 스와이프가 Firestore에 업데이트되었습니다.');
     } catch (error) {
-      console.error('Firestore 업데이트 오류:', error);
+      // console.error('Firestore 업데이트 오류:', error);
     }
   }, [swipeDecisions, musicList, categoryId]);
 
@@ -172,15 +174,48 @@ export default function MusicWorldcupScreen({ categoryId, onClose }: MusicWorldc
   const resetAnimation = useCallback(() => {
     translateX.value = 0;
     translateY.value = 0;
-    rotation.value = 0;
-    opacityYes.value = withSpring(0, { damping: 20, stiffness: 200 });
-    opacityNo.value = withSpring(0, { damping: 20, stiffness: 200 });
+    rotation.value = withTiming(0, {
+        duration: 200,
+        easing: Easing.out(Easing.ease),
+      });
+      backgroundProgress.value = withTiming(0, {
+        duration: 500,
+        easing: Easing.out(Easing.ease),
+      });
+
+      // YES 아이콘이 서서히 사라지도록 지연 추가
+      opacityYes.value = withDelay(
+        500, // 500ms 지연
+        withTiming(0, {
+          duration: 500, // 서서히 사라지는 시간
+          easing: Easing.out(Easing.ease),
+        })
+      );
+
+      // NO 아이콘이 서서히 사라지도록 지연 추가
+      opacityNo.value = withDelay(
+        500, // 500ms 지연
+        withTiming(0, {
+          duration: 500, // 서서히 사라지는 시간
+          easing: Easing.out(Easing.ease),
+        })
+      );
+  opacity.value = withDelay(
+          500, // 500ms 지연
+          withTiming(0, {
+            duration: 500, // 서서히 사라지는 시간
+            easing: Easing.out(Easing.ease),
+          })
+        );
     backgroundProgress.value = withSpring(0, { damping: 20, stiffness: 200 });
 
-    scale.value = withSequence(
-        withSpring(1.1, { damping: 20, stiffness: 200 }), // 10% 커짐
-        withSpring(1, { damping: 20, stiffness: 200 })    // 원래 크기로 돌아감
-      );
+    scale.value = withDelay(
+            1000,
+            withTiming(1, {
+              duration: 10000, // 서서히 사라지는 시간
+              easing: Easing.out(Easing.ease),
+            })
+          );
   }, []);
 
   // 스와이프 처리 함수 (결과를 로컬 상태에 저장)
@@ -234,9 +269,9 @@ export default function MusicWorldcupScreen({ categoryId, onClose }: MusicWorldc
           });
         })
       );
-      console.log('모든 곡이 초기화되었습니다.');
+      // console.log('모든 곡이 초기화되었습니다.');
     } catch (error) {
-      console.error('곡 초기화 오류:', error);
+      // console.error('곡 초기화 오류:', error);
     }
   }, [musicList, categoryId]);
 
@@ -257,6 +292,7 @@ export default function MusicWorldcupScreen({ categoryId, onClose }: MusicWorldc
   const rotation = useSharedValue(0);
   const opacityYes = useSharedValue(0);
   const opacityNo = useSharedValue(0);
+  const opacity = useSharedValue(0);
   const backgroundProgress = useSharedValue(0);
   const scale = useSharedValue(1);
 
@@ -298,12 +334,12 @@ export default function MusicWorldcupScreen({ categoryId, onClose }: MusicWorldc
         runOnJS(resetAnimation)();
       } else {
         // 원래 위치로 복귀
-        translateX.value = withSpring(0, { damping: 20, stiffness: 200 });
-        translateY.value = withSpring(0, { damping: 20, stiffness: 200 });
-        rotation.value = withSpring(0, { damping: 20, stiffness: 200 });
-        opacityYes.value = withSpring(0, { damping: 20, stiffness: 200 });
-        opacityNo.value = withSpring(0, { damping: 20, stiffness: 200 });
-        backgroundProgress.value = withSpring(0, { damping: 20, stiffness: 200 });
+        translateX.value = withSpring(0, { damping: 25, stiffness: 100 });
+            translateY.value = withSpring(0, { damping: 25, stiffness: 100 });
+            rotation.value = withSpring(0, { damping: 25, stiffness: 100 });
+            opacityYes.value = withSpring(0, { damping: 25, stiffness: 100 });
+            opacityNo.value = withSpring(0, { damping: 25, stiffness: 100 });
+            backgroundProgress.value = withSpring(0, { damping: 25, stiffness: 100 });
       }
     },
   });
@@ -414,7 +450,8 @@ export default function MusicWorldcupScreen({ categoryId, onClose }: MusicWorldc
               )}
             </ScrollView>
 
-            {/* 디버깅을 위한 전체 음악 리스트 출력 */}
+            {/*
+            // 디버깅을 위한 전체 음악 리스트 출력
             <Text style={styles.debugTitle}>디버그 정보:</Text>
             <ScrollView style={styles.debugScrollView}>
               {musicList.map((song, index) => (
@@ -424,10 +461,11 @@ export default function MusicWorldcupScreen({ categoryId, onClose }: MusicWorldc
               ))}
             </ScrollView>
 
-            {/* 현재 인덱스 및 현재 노래 제목 표시 */}
+            // 현재 인덱스 및 현재 노래 제목 표시
             <Text style={styles.debugText}>
               현재 인덱스: {currentIndex} | 현재 노래 제목: {currentSong ? currentSong.title : '없음'}
             </Text>
+            */}
 
             {/* 뒤로가기 버튼 추가 */}
             <TouchableOpacity onPress={onClose} style={styles.backButton}>
@@ -467,10 +505,12 @@ export default function MusicWorldcupScreen({ categoryId, onClose }: MusicWorldc
                     화면을 좌/우로 스와이프하여 Yes/No를 결정하세요.
                   </Text>
 
-                  {/* 디버깅 정보: 현재 아이디, 인덱스, 제목 */}
+                  {/*
+                  // 디버깅 정보: 현재 아이디, 인덱스, 제목
                   <Text style={styles.debugText}>
                     현재 아이디: {currentSong.id} | 현재 인덱스: {currentIndex} | 현재 노래 제목: {currentSong.title}
                   </Text>
+                  */}
                 </Card>
               </Animated.View>
             </PanGestureHandler>
@@ -509,6 +549,7 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     maxHeight: SCREEN_HEIGHT * 0.3, // 결과 리스트의 최대 높이 설정
   },
+  /*
   debugTitle: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -527,6 +568,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginVertical: 2,
   },
+  */
   resultText: {
     fontSize: 28,
     fontWeight: 'bold',
@@ -607,4 +649,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  /*
+  // Removed debug styles
+  debugTitle: {},
+  debugScrollView: {},
+  debugText: {},
+  */
 });

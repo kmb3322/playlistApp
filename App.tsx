@@ -9,8 +9,9 @@ import { Provider as PaperProvider } from 'react-native-paper'; // 추가
 
 // 스크린 import
 import HomeScreen from './screens/HomeScreen';
-import ProfileScreen from './screens/ProfileScreen';
 import SearchScreen from './screens/SearchScreen';
+import ProfileScreen from './screens/ProfileScreen';
+
 
 // 음악 데이터 (예시로 JSON 파일에서 로드된 데이터로 가정)
 const musicData = [
@@ -245,14 +246,7 @@ function HomeScreenComponent() {
 
 
 
-// Profile 화면 컴포넌트
-function ProfileScreenComponent() {
-  return (
-    <View style={styles.container}>
-      <Text>Profile Screen</Text>
-    </View>
-  );
-}
+
 
 // Bottom Tabs 생성
 const Tab = createBottomTabNavigator();
@@ -301,7 +295,7 @@ export default function App() {
           {/* 'Profile' 탭 */}
           <Tab.Screen
             name="Profile"
-            component={ProfileScreenComponent}
+            component={ProfileScreen}
           />
         </Tab.Navigator>
       </NavigationContainer>
