@@ -79,16 +79,20 @@ const AnimatedThumbnail: React.FC<AnimatedThumbnailProps> = ({ item, index }) =>
         {showOverlay && (
           <TouchableWithoutFeedback onPress={handleCloseOverlay}>
             <View style={styles.overlay}>
-              <TouchableWithoutFeedback onPress={() => { /* 이벤트 전파 방지 */ }}>
-                <View style={styles.overlayContent}>
+              <View style={styles.overlayContent}>
+                <TouchableOpacity onPress={handleCloseOverlay}>
                   <Text style={styles.title}>{item.title}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleCloseOverlay}>
                   <Text style={styles.artist}>{item.artist}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleCloseOverlay}>
                   <Text style={styles.count}>Count: {item.count}</Text>
-                  <TouchableOpacity onPress={handleOpenYouTube} style={styles.youtubeButton}>
-                    <Icon name="youtube-play" size={20} color="#FFFFFF" />
-                  </TouchableOpacity>
-                </View>
-              </TouchableWithoutFeedback>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleOpenYouTube} style={styles.youtubeButton}>
+                  <Icon name="youtube-play" size={20} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
             </View>
           </TouchableWithoutFeedback>
         )}
@@ -104,8 +108,6 @@ const styles = StyleSheet.create({
     marginRight: 5,
     marginBottom: 10,
     overflow: 'hidden',
-
-
   },
   touchable: {
     flex: 1,
@@ -117,7 +119,6 @@ const styles = StyleSheet.create({
     aspectRatio: 1, // 원래 비율 유지
     alignItems: 'center',
     justifyContent: 'center',
-
   },
   thumbnail: {
     width: '100%',
