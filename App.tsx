@@ -151,6 +151,12 @@ function HomeScreenComponent() {
 
   // 노래 삭제 처리
   const handleDeleteSong = () => {
+      // 삭제된 항목의 swipeProgress를 초기화
+      setSwipeProgress((prevProgress) => {
+        const updatedProgress = [...prevProgress];
+        updatedProgress.splice(selectedSongIndex, 1); // 삭제된 항목의 progress 초기화
+        return updatedProgress;
+      });
       setSongs((prevSongs) => {
         const updatedSongs = [...prevSongs];
         updatedSongs.splice(selectedSongIndex, 1);
@@ -195,7 +201,7 @@ function HomeScreenComponent() {
     return (
       <Animated.View style={[styles.deleteButton, { opacity: swipeProgress[index] }]}>
         <TouchableOpacity
-          style={styles.deleteButtonTouchable}
+          style={styles.deleteButton}
           onPress={() => {
             setSelectedSongIndex(index);
             setIsDeleteModalVisible(true);
