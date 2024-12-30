@@ -32,10 +32,10 @@ const AnimatedThumbnail: React.FC<AnimatedThumbnailProps> = ({ item, index }) =>
   const [showOverlay, setShowOverlay] = useState<boolean>(false);
 
   const getFlexBasis = (count: number): string => {
-    if (count > 20) return '98%';
-    if (count > 10) return '48%'; // 한 줄에 2개 (여백 고려)
-    if (count > 5) return '31%'; // 한 줄에 3개
-    if (count < 1) return '16%';
+    if (count > 50) return '98%';
+    if (count > 20) return '48%'; // 한 줄에 2개 (여백 고려)
+    if (count > 10) return '31%'; // 한 줄에 3개
+    if (count < 2) return '16%';
     return '23%'; // 한 줄에 4개
   };
 
@@ -98,11 +98,14 @@ const AnimatedThumbnail: React.FC<AnimatedThumbnailProps> = ({ item, index }) =>
 };
 
 const styles = StyleSheet.create({
+
   thumbnailContainer: {
     position: 'relative',
     marginRight: 5,
     marginBottom: 10,
     overflow: 'hidden',
+
+
   },
   touchable: {
     flex: 1,
@@ -114,6 +117,7 @@ const styles = StyleSheet.create({
     aspectRatio: 1, // 원래 비율 유지
     alignItems: 'center',
     justifyContent: 'center',
+
   },
   thumbnail: {
     width: '100%',

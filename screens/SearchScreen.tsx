@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import MusicWorldcupScreen from './MusicWorldcupScreen';
 import { db } from '../firebaseConfig'; // Firestore 초기화 파일 임포트
-import { collection, getDocs, CollectionReference } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 
 export default function SearchScreen() {
   // State to manage whether to show the Worldcup screen
@@ -54,7 +54,7 @@ export default function SearchScreen() {
   // Render each category as a button
   const renderCategory = ({ item }: { item: any }) => (
     <TouchableOpacity style={styles.collectionButton} onPress={() => startWorldcup(item.id)}>
-      <Text style={styles.collectionText}>{item.name}</Text>
+      <Text style={styles.collectionText}>{item.id}</Text>
     </TouchableOpacity>
   );
 
@@ -114,23 +114,29 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   title2: {
-      fontSize: 22,
-      marginBottom: 50,
-      fontWeight: 'bold',
-      textAlign: 'center',
-    },
+    fontSize: 22,
+    marginBottom: 50,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
   collectionButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFF', // 배경색을 변경하여 텍스트가 보이도록 함
     paddingVertical: 15,
     paddingHorizontal: 25,
     borderRadius: 20,
     marginVertical: 10,
     width: '100%',
     alignItems: 'center',
+    shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.15,
+            shadowRadius: 3.84,
+            elevation: 3, // Android용 그림자
   },
   collectionText: {
-    color: '#fff',
-    fontSize: 18,
+    color: '#000',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   listContainer: {
     width: '100%',

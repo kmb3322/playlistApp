@@ -344,15 +344,17 @@ export default function App() {
           <Tab.Navigator
             screenOptions={({ route }) => ({
               headerShown: false, // 헤더 제거
+              tabBarShowLabel: false, // 라벨 숨기기
+
               tabBarIcon: ({ color, size }) => {
                 let iconName = '';
 
                 if (route.name === 'Home') {
-                  iconName = 'home';
+                  iconName = 'musical-note';
                 } else if (route.name === 'Search') {
-                  iconName = 'search';
+                  iconName = 'trophy';
                 } else if (route.name === 'Profile') {
-                  iconName = 'person';
+                  iconName = 'images';
                 }
 
                 return <Icon name={iconName} size={size} color={color} />;
@@ -363,6 +365,8 @@ export default function App() {
                 backgroundColor: '#FFFFFF', // 탭 바 배경색
                 borderTopWidth: 0,
                 elevation: 5, // Android 그림자
+                height: 40, // 원하는 높이로 설정 (기본값은 약 60)
+                paddingVertical: 5, // 아이콘을 세로로 가운데에 배치
               },
             })}
           >
@@ -395,7 +399,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#FFFFFF', // 배경색 변경
+    backgroundColor: '#F5F5F5', // 배경색 변경
   },
   headerContainer: {
     flexDirection: 'row',

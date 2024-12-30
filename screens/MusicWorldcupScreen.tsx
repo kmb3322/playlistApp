@@ -371,13 +371,13 @@ export default function MusicWorldcupScreen({ categoryId, onClose }: MusicWorldc
     const bgColor = interpolateColor(
       backgroundProgress.value,
       [0, 1],
-      ['rgba(255,255,255,1)', 'rgba(76, 175, 80, 0.5)'] // 초록색
+      ['#F5F5F5', 'rgba(76, 175, 80, 0.5)'] // 초록색
     );
 
     const bgColorNo = interpolateColor(
       backgroundProgress.value,
       [0, 1],
-      ['rgba(255,255,255,1)', 'rgba(244, 67, 54, 0.5)'] // 빨간색
+      ['#F5F5F5', 'rgba(244, 67, 54, 0.5)'] // 빨간색
     );
 
     return {
@@ -386,7 +386,7 @@ export default function MusicWorldcupScreen({ categoryId, onClose }: MusicWorldc
           ? bgColor
           : translateX.value < 0
           ? bgColorNo
-          : 'rgba(255,255,255,1)',
+          : '#F5F5F5', // 수정된 부분
     };
   });
 
@@ -442,7 +442,7 @@ export default function MusicWorldcupScreen({ categoryId, onClose }: MusicWorldc
               {likedSongs.length > 0 ? (
                 likedSongs.map((song, index) => (
                   <Text key={song.id} style={styles.likedSong}>
-                    {index + 1}. {song.title} - {song.artist} (count: {song.count})
+                    {index + 1}. {song.title} - {song.artist}
                   </Text>
                 ))
               ) : (
@@ -450,31 +450,15 @@ export default function MusicWorldcupScreen({ categoryId, onClose }: MusicWorldc
               )}
             </ScrollView>
 
-            {/*
-            // 디버깅을 위한 전체 음악 리스트 출력
-            <Text style={styles.debugTitle}>디버그 정보:</Text>
-            <ScrollView style={styles.debugScrollView}>
-              {musicList.map((song, index) => (
-                <Text key={song.id} style={styles.debugText}>
-                  {index + 1}. {song.title} - {song.artist} | isYES: {song.isYES ? 'true' : 'false'} | count: {song.count} | id: {song.id}
-                </Text>
-              ))}
-            </ScrollView>
-
-            // 현재 인덱스 및 현재 노래 제목 표시
-            <Text style={styles.debugText}>
-              현재 인덱스: {currentIndex} | 현재 노래 제목: {currentSong ? currentSong.title : '없음'}
-            </Text>
-            */}
-
-            {/* 뒤로가기 버튼 추가 */}
-            <TouchableOpacity onPress={onClose} style={styles.backButton}>
-              <Text style={styles.backButtonText}>홈으로 돌아가기</Text>
-            </TouchableOpacity>
             {/* 월드컵 다시 시작 버튼 추가 */}
             <TouchableOpacity onPress={restartWorldcup} style={styles.restartButton}>
-              <Text style={styles.backButtonText}>다시 시작하기</Text>
+              <Text style={styles.backButtonText2}>월드컵 다시 시작하기</Text>
             </TouchableOpacity>
+            {/* 뒤로가기 버튼 추가 */}
+            <TouchableOpacity onPress={onClose} style={styles.backButton}>
+              <Text style={styles.backButtonText}>다른 플레이리스트 살펴보기</Text>
+            </TouchableOpacity>
+
           </View>
         ) : (
           <>
@@ -505,12 +489,6 @@ export default function MusicWorldcupScreen({ categoryId, onClose }: MusicWorldc
                     화면을 좌/우로 스와이프하여 Yes/No를 결정하세요.
                   </Text>
 
-                  {/*
-                  // 디버깅 정보: 현재 아이디, 인덱스, 제목
-                  <Text style={styles.debugText}>
-                    현재 아이디: {currentSong.id} | 현재 인덱스: {currentIndex} | 현재 노래 제목: {currentSong.title}
-                  </Text>
-                  */}
                 </Card>
               </Animated.View>
             </PanGestureHandler>
@@ -524,7 +502,7 @@ export default function MusicWorldcupScreen({ categoryId, onClose }: MusicWorldc
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    // backgroundColor은 Animated.View에서 설정
+    backgroundColor: '#F5F5F5', // 추가된 부분
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -543,6 +521,7 @@ const styles = StyleSheet.create({
     padding: 20,
     width: '100%', // 가로 전체 사용
     flex: 1, // 세로 공간 채우기
+    backgroundColor: '#F5F5F5', // 수정된 부분
   },
   scrollView: {
     width: '100%',
@@ -572,13 +551,14 @@ const styles = StyleSheet.create({
   resultText: {
     fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 30,
   },
   resultSubtitle: {
-    fontSize: 20,
+    fontSize: 16,
     marginBottom: 10,
   },
   likedSong: {
+      marginTop: 5,
     fontSize: 16,
     marginVertical: 2,
   },
@@ -588,23 +568,39 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 10,
-    width: '60%',
+    width: '70%',
     alignItems: 'center',
+    shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 3.84,
+        elevation: 3, // Android용 그림자
   },
   restartButton: {
     marginTop: 10,
-    backgroundColor: '#03dac6',
+    backgroundColor: '#FFF',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 10,
     width: '60%',
     alignItems: 'center',
+    shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 3.84,
+        elevation: 3, // Android용 그림자
   },
   backButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
   },
+  backButtonText2: {
+      color: '#6200ee',
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+
   card: {
     width: SCREEN_WIDTH * 0.9,
     position: 'absolute',
@@ -648,6 +644,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F5F5F5', // 추가된 부분
   },
   /*
   // Removed debug styles
