@@ -1,3 +1,10 @@
+실행전, firebase 연결을 위해 firebaseConfig.ts 파일을 루트 디렉토리에 생성하세요.
+
+
+
+
+
+
 This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
 
 # Getting Started

@@ -1,16 +1,17 @@
 // Music List에 노래를 추가할 버튼을 추가한 코드
 
 import * as React from 'react';
-import { Text, View, FlatList, StyleSheet, Image, TouchableOpacity, Linking, TextInput, Alert, Button, Modal } from 'react-native';
+import { Text, View, FlatList, StyleSheet, Image, TouchableOpacity, Linking, TextInput, Alert, Button, Modal, Animated } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Provider as PaperProvider } from 'react-native-paper'; // 추가
+import { Swipeable, GestureHandlerRootView } from 'react-native-gesture-handler';
 
 // 스크린 import
 import HomeScreen from './screens/HomeScreen';
-import SearchScreen from './screens/SearchScreen';
 import ProfileScreen from './screens/ProfileScreen';
+import SearchScreen from './screens/SearchScreen';
 
 
 // 음악 데이터 (예시로 JSON 파일에서 로드된 데이터로 가정)
@@ -123,10 +124,17 @@ function HomeScreenComponent() {
   const [isModalVisible, setIsModalVisible] = React.useState(false);
   const [newSongTitle, setNewSongTitle] = React.useState('');
   const [newSongArtist, setNewSongArtist] = React.useState('');
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = React.useState(false);
+  const [selectedSongIndex, setSelectedSongIndex] = React.useState(null);
+  // 여러 스와이프 진행 상태 관리
+    const [swipeProgress, setSwipeProgress] = React.useState(
+      musicData.map(() => new Animated.Value(0)) // 각 항목에 대해 Animated.Value 초기화
+    );
+
 
   // 데이터 정렬 및 상태 초기화
   React.useEffect(() => {
-    const sortedSongs = [...musicData].sort((a, b) => b.priority - a.priority);
+    const sortedSongs = [...musicData].sort((a, b) => a.priority - b.priority);
     setSongs(sortedSongs);
   }, []);
 
@@ -140,9 +148,25 @@ function HomeScreenComponent() {
   // 유튜브 링크 열기
   const handleMusicClick = (url) => {
     Linking.openURL(url).catch((err) => {
-      console.error("Failed to open URL:", err);
+      console.error('Failed to open URL:', err);
     });
   };
+
+  // 노래 삭제 처리
+  const handleDeleteSong = () => {
+      // 삭제된 항목의 swipeProgress를 초기화
+      setSwipeProgress((prevProgress) => {
+        const updatedProgress = [...prevProgress];
+        updatedProgress.splice(selectedSongIndex, 1); // 삭제된 항목의 progress 초기화
+        return updatedProgress;
+      });
+      setSongs((prevSongs) => {
+        const updatedSongs = [...prevSongs];
+        updatedSongs.splice(selectedSongIndex, 1);
+        return updatedSongs;
+      });
+      setIsDeleteModalVisible(false);
+    };
 
   // 노래 추가 처리
   const handleAddSong = () => {
@@ -151,23 +175,53 @@ function HomeScreenComponent() {
         title: newSongTitle,
         artist: newSongArtist,
         priority: songs.length + 1,
-        cover: require("./assets/images/gradation.jpg"),    //기본 커버
-        youtubeUrl: "https://www.youtube.com", // 기본 URL 지정
+        cover: require('./assets/images/gradation.jpg'), // 기본 커버
+        youtubeUrl: 'https://www.youtube.com', // 기본 URL 지정
       };
       setSongs((prevSongs) => [...prevSongs, newSong]);
       setNewSongTitle('');
       setNewSongArtist('');
       setIsModalVisible(false);
     } else {
-      Alert.alert("Invalid Input", "Please provide both title and artist.");
+      Alert.alert('Invalid Input', 'Please provide both title and artist.');
     }
   };
 
+  const handleCancelDelete = () => {
+      setIsDeleteModalVisible(false);
+      setSelectedSongIndex(null);
+    };
+
   //cancel버튼 처리
   const handleCancel = () => {
-      setNewSongTitle('');
-      setNewSongArtist('');
-      setIsModalVisible(false);
+    setNewSongTitle('');
+    setNewSongArtist('');
+    setIsModalVisible(false);
+  };
+
+  // 스와이프 삭제 기능
+  const renderRightActions = (index) => {
+    return (
+      <Animated.View style={[styles.deleteButton, { opacity: swipeProgress[index] }]}>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => {
+            setSelectedSongIndex(index);
+            setIsDeleteModalVisible(true);
+          }}
+        >
+          <Icon name="trash" size={30} color="#fff" />
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
+
+  const handleSwipeProgress = (index, progress) => {
+    Animated.timing(swipeProgress[index], {
+      toValue: progress, // 스와이프 진행 비율에 맞게 애니메이션 적용
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
   };
 
   return (
@@ -175,7 +229,10 @@ function HomeScreenComponent() {
       {/* 상단 타이틀 및 버튼 */}
       <View style={styles.headerContainer}>
         <Text style={styles.title}>Music List</Text>
-        <TouchableOpacity style={styles.addButton} onPress={() => setIsModalVisible(true)}>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => setIsModalVisible(true)}
+        >
           <Text style={styles.addButtonText}>+ Add</Text>
         </TouchableOpacity>
       </View>
@@ -192,16 +249,22 @@ function HomeScreenComponent() {
       <FlatList
         data={filteredSongs}
         keyExtractor={(item) => item.title}
-        renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => handleMusicClick(item.youtubeUrl)}>
-            <View style={styles.item}>
-              <Image source={item.cover} style={styles.albumCover} />
-              <View style={styles.textContainer}>
-                <Text style={styles.musicTitle}>{item.title}</Text>
-                <Text style={styles.musicArtist}>{item.artist}</Text>
+        renderItem={({ item, index }) => (
+          <Swipeable
+            renderRightActions={() => renderRightActions(index)}
+            onSwipeableWillOpen={() => handleSwipeProgress(index, 1)} // 스와이프 시작 시 애니메이션 시작
+            onSwipeableWillClose={() => handleSwipeProgress(index, 0)} // 스와이프 종료 시 애니메이션 종료
+          >
+            <TouchableOpacity onPress={() => handleMusicClick(item.youtubeUrl)}>
+              <View style={styles.item}>
+                <Image source={item.cover} style={styles.albumCover} />
+                <View style={styles.textContainer}>
+                  <Text style={styles.musicTitle}>{item.title}</Text>
+                  <Text style={styles.musicArtist}>{item.artist}</Text>
+                </View>
               </View>
-            </View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </Swipeable>
         )}
       />
 
@@ -238,6 +301,28 @@ function HomeScreenComponent() {
           </View>
         </View>
       </Modal>
+
+      {/* 삭제 확인 모달 */}
+        <Modal
+          visible={isDeleteModalVisible}
+          animationType="fade"
+          transparent={true}
+          onRequestClose={handleCancelDelete}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Are you sure you want to delete this song?</Text>
+              <View style={styles.modalButtons}>
+                <TouchableOpacity style={styles.cancelButton} onPress={handleCancelDelete}>
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.saveButton} onPress={handleDeleteSong}>
+                  <Text style={styles.saveButtonText}>Delete</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
     </View>
   );
 }
@@ -253,53 +338,55 @@ const Tab = createBottomTabNavigator();
 
 export default function App() {
   return (
-    <PaperProvider> {/* 추가 */}
-      <NavigationContainer>
-        <Tab.Navigator
-          screenOptions={({ route }) => ({
-            headerShown: false, // 헤더 제거
-            tabBarIcon: ({ color, size }) => {
-              let iconName = '';
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <PaperProvider> {/* 추가 */}
+        <NavigationContainer>
+          <Tab.Navigator
+            screenOptions={({ route }) => ({
+              headerShown: false, // 헤더 제거
+              tabBarIcon: ({ color, size }) => {
+                let iconName = '';
 
-              if (route.name === 'Home') {
-                iconName = 'home';
-              } else if (route.name === 'Search') {
-                iconName = 'search';
-              } else if (route.name === 'Profile') {
-                iconName = 'person';
-              }
+                if (route.name === 'Home') {
+                  iconName = 'home';
+                } else if (route.name === 'Search') {
+                  iconName = 'search';
+                } else if (route.name === 'Profile') {
+                  iconName = 'person';
+                }
 
-              return <Icon name={iconName} size={size} color={color} />;
-            },
-            tabBarActiveTintColor: '#6200ee', // 활성 탭 색상
-            tabBarInactiveTintColor: 'gray', // 비활성 탭 색상
-            tabBarStyle: {
-              backgroundColor: '#FFFFFF', // 탭 바 배경색
-              borderTopWidth: 0,
-              elevation: 5, // Android 그림자
-            },
-          })}
-        >
-          {/* 'Home' 탭 */}
-          <Tab.Screen
-            name="Home"
-            component={HomeScreenComponent}
-          />
+                return <Icon name={iconName} size={size} color={color} />;
+              },
+              tabBarActiveTintColor: '#6200ee', // 활성 탭 색상
+              tabBarInactiveTintColor: 'gray', // 비활성 탭 색상
+              tabBarStyle: {
+                backgroundColor: '#FFFFFF', // 탭 바 배경색
+                borderTopWidth: 0,
+                elevation: 5, // Android 그림자
+              },
+            })}
+          >
+            {/* 'Home' 탭 */}
+            <Tab.Screen
+              name="Home"
+              component={HomeScreenComponent}
+            />
 
-          {/* 'Search' 탭 -> SearchScreen 사용 */}
-          <Tab.Screen
-            name="Search"
-            component={SearchScreen}
-          />
+            {/* 'Search' 탭 -> SearchScreen 사용 */}
+            <Tab.Screen
+              name="Search"
+              component={SearchScreen}
+            />
 
-          {/* 'Profile' 탭 */}
-          <Tab.Screen
-            name="Profile"
-            component={ProfileScreen}
-          />
-        </Tab.Navigator>
-      </NavigationContainer>
-    </PaperProvider>
+            {/* 'Profile' 탭 */}
+            <Tab.Screen
+              name="Profile"
+              component={ProfileScreen}
+            />
+          </Tab.Navigator>
+        </NavigationContainer>
+      </PaperProvider>
+    </GestureHandlerRootView>
   );
 }
 
@@ -419,5 +506,13 @@ const styles = StyleSheet.create({
   saveButtonText: {
     color: '#fff',
     fontWeight: 'bold',
+  },
+  deleteButton: {
+    backgroundColor: '#FF3B30',
+    justifyContent: 'center',
+    borderRadius: 5,
+    alignItems: 'center',
+    width: 80,
+    height: '100%',
   },
 });
