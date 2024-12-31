@@ -1,15 +1,17 @@
 // screens/ProfileScreen.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { db } from '../firebaseConfig'; // Firestore 초기화 파일
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import AnimatedThumbnail from '../components/AnimatedThumbnail';
+import { useFocusEffect } from '@react-navigation/native'; // 추가: useFocusEffect 임포트
 
 interface Song {
   id: string;
@@ -26,50 +28,55 @@ const ProfileScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Firestore에서 모든 노래 가져오기
-  useEffect(() => {
-    const fetchSongs = async () => {
-      try {
-        const categoriesSnapshot = await getDocs(collection(db, 'categories'));
-        const allSongs: Song[] = [];
+  const fetchSongs = async () => {
+    setLoading(true);
+    setError(null); // 이전 에러 상태 초기화
+    try {
+      const categoriesSnapshot = await getDocs(collection(db, 'categories'));
+      const allSongs: Song[] = [];
 
-        for (const categoryDoc of categoriesSnapshot.docs) {
-          const songsCollection = collection(db, 'categories', categoryDoc.id, 'songs');
-          const songsSnapshot = await getDocs(query(songsCollection, orderBy('count', 'desc')));
+      for (const categoryDoc of categoriesSnapshot.docs) {
+        const songsCollection = collection(db, 'categories', categoryDoc.id, 'songs');
+        const songsSnapshot = await getDocs(query(songsCollection, orderBy('count', 'desc')));
 
-          songsSnapshot.forEach(songDoc => {
-            const data = songDoc.data();
-            if (data.youtubeId) {
-              allSongs.push({
-                id: songDoc.id,
-                title: data.title,
-                artist: data.artist,
-                youtubeId: data.youtubeId,
-                count: data.count || 0,
-                isYES: data.isYES || false,
-              });
-            } else {
-              console.warn(`Song with ID ${songDoc.id} is missing youtubeId.`);
-            }
-          });
-        }
-
-        console.log('Fetched Songs:', allSongs); // 디버깅 로그 추가
-
-        if (allSongs.length === 0) {
-          console.warn('No songs fetched from Firestore.');
-        }
-
-        setSongs(allSongs);
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching songs:', err);
-        setError('노래를 불러오는 데 실패했습니다.');
-        setLoading(false);
+        songsSnapshot.forEach(songDoc => {
+          const data = songDoc.data();
+          if (data.youtubeId) {
+            allSongs.push({
+              id: songDoc.id,
+              title: data.title,
+              artist: data.artist,
+              youtubeId: data.youtubeId,
+              count: data.count || 0,
+              isYES: data.isYES || false,
+            });
+          } else {
+            console.warn(`Song with ID ${songDoc.id} is missing youtubeId.`);
+          }
+        });
       }
-    };
 
-    fetchSongs();
-  }, []);
+      console.log('Fetched Songs:', allSongs); // 디버깅 로그 추가
+
+      if (allSongs.length === 0) {
+        console.warn('No songs fetched from Firestore.');
+      }
+
+      setSongs(allSongs);
+    } catch (err) {
+      console.error('Error fetching songs:', err);
+      setError('노래를 불러오는 데 실패했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // useEffect 대신 useFocusEffect 사용: 화면이 포커스될 때마다 fetchSongs 호출
+  useFocusEffect(
+    useCallback(() => {
+      fetchSongs(); // 탭에 포커스될 때마다 데이터 로드
+    }, [])
+  );
 
   if (loading) {
     return (
@@ -97,18 +104,17 @@ const ProfileScreen: React.FC = () => {
   }
 
   return (
-      <View style={styles.container}>
-            {/* 헤더 추가 */}
-            <Text style={styles.header}>내가 좋아한 음악</Text>
+    <View style={styles.container}>
+      {/* 헤더 추가 */}
+      <Text style={styles.header}>내가 좋아한 음악</Text>
 
-
-    <ScrollView contentContainerStyle={styles.galleryContainer}>
-      <View style={styles.grid}>
-        {songs.map((item, index) => (
-          <AnimatedThumbnail key={item.id} item={item} index={index} />
-        ))}
-      </View>
-    </ScrollView>
+      <ScrollView contentContainerStyle={styles.galleryContainer}>
+        <View style={styles.grid}>
+          {songs.map((item, index) => (
+            <AnimatedThumbnail key={item.id} item={item} index={index} />
+          ))}
+        </View>
+      </ScrollView>
     </View>
   );
 };
@@ -121,9 +127,12 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   container: {
-      flex: 1,
-      padding: 10,
-    },
+    flex: 1,
+    paddingTop: 10,
+    paddingLeft: 10,
+    paddingRight: 10,
+    paddingBottom: 0,
+  },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -139,12 +148,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   header: { // 헤더 스타일
-        fontSize: 25,
-        fontWeight: 'bold',
-        marginTop: 10,
-        marginBottom: 10,
-        marginLeft: 10,
-        textAlign: 'left',
-        color: '#333',
-      },
+    fontSize: 25,
+    fontWeight: 'bold',
+    marginTop: 10,
+    marginBottom: 10,
+    marginLeft: 10,
+    textAlign: 'left',
+    color: '#333',
+  },
 });

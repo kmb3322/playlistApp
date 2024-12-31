@@ -39,6 +39,47 @@ const AnimatedThumbnail: React.FC<AnimatedThumbnailProps> = ({ item, index }) =>
     return '23%'; // 한 줄에 4개
   };
 
+  const getOverlaySizes = (count: number) => {
+    if (count > 50) {
+      return {
+        titleFontSize: 16,
+        artistFontSize: 14,
+        countFontSize: 12,
+        iconSize: 24,
+      };
+    } else if (count > 20) {
+      return {
+        titleFontSize: 14,
+        artistFontSize: 12,
+        countFontSize: 10,
+        iconSize: 20,
+      };
+    } else if (count > 10) {
+      return {
+        titleFontSize: 12,
+        artistFontSize: 10,
+        countFontSize: 8,
+        iconSize: 18,
+      };
+    } else if (count < 2) {
+      return {
+        titleFontSize: 8,
+        artistFontSize: 6,
+        countFontSize: 4,
+        iconSize: 12,
+      };
+    } else {
+      return {
+        titleFontSize: 10,
+        artistFontSize: 8,
+        countFontSize: 6,
+        iconSize: 16,
+      };
+    }
+  };
+
+  const overlaySizes = getOverlaySizes(item.count);
+
   const handleImagePress = () => {
     setShowOverlay(true);
   };
@@ -81,16 +122,26 @@ const AnimatedThumbnail: React.FC<AnimatedThumbnailProps> = ({ item, index }) =>
             <View style={styles.overlay}>
               <View style={styles.overlayContent}>
                 <TouchableOpacity onPress={handleCloseOverlay}>
-                  <Text style={styles.title}>{item.title}</Text>
+                  <Text style={[styles.title, { fontSize: overlaySizes.titleFontSize }]}>
+                    {item.title}
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={handleCloseOverlay}>
-                  <Text style={styles.artist}>{item.artist}</Text>
+                  <Text style={[styles.artist, { fontSize: overlaySizes.artistFontSize }]}>
+                    {item.artist}
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={handleCloseOverlay}>
-                  <Text style={styles.count}>Count: {item.count}</Text>
+                  <Text style={[styles.count, { fontSize: overlaySizes.countFontSize }]}>
+                    Count: {item.count}
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={handleOpenYouTube} style={styles.youtubeButton}>
-                  <Icon name="youtube-play" size={20} color="#FFFFFF" />
+                  <Icon
+                    name="youtube-play"
+                    size={overlaySizes.iconSize}
+                    color="#FFFFFF"
+                  />
                 </TouchableOpacity>
               </View>
             </View>
@@ -102,11 +153,11 @@ const AnimatedThumbnail: React.FC<AnimatedThumbnailProps> = ({ item, index }) =>
 };
 
 const styles = StyleSheet.create({
-
   thumbnailContainer: {
     position: 'relative',
     marginRight: 5,
     marginBottom: 10,
+    aspectRatio:1,
     overflow: 'hidden',
   },
   touchable: {
@@ -124,6 +175,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     transform: [{ scale: 1.4 }],
+    aspectRatio: 1,
     // 추가적인 스타일을 통해 중앙에 위치하도록 함
     // resizeMode는 'cover'로 설정되어 있어 이미지가 잘리지 않게 함
   },
@@ -145,24 +197,21 @@ const styles = StyleSheet.create({
   title: {
     color: '#FFFFFF',
     fontWeight: 'bold',
-    fontSize: 12,
     marginBottom: 1,
+    marginTop: 5,
     textAlign: 'center',
   },
   artist: {
     color: '#FFFFFF',
-    fontSize: 10,
-    marginBottom: 1,
+    marginBottom: 3,
     textAlign: 'center',
   },
   count: {
     color: '#FFFFFF',
-    fontSize: 6,
     textAlign: 'center',
   },
   youtubeButton: {
     padding: 5,
-    marginTop: 5,
     borderRadius: 3,
   },
 });
