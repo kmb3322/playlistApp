@@ -1,142 +1,100 @@
 // Music List에 노래를 추가할 버튼을 추가한 코드
 
 import * as React from 'react';
-import { Text, View, FlatList, StyleSheet, Image, TouchableOpacity, Linking, TextInput, Alert, Button, Modal, Animated } from 'react-native';
+import { Text, View, FlatList, StyleSheet, Image, TouchableOpacity, Linking, TextInput, Alert, Button, Modal, Animated, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Provider as PaperProvider } from 'react-native-paper'; // 추가
 import { Swipeable, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { getYouTubeThumbnail, getYouTubeUrl } from './utils/youtubeUtils';
+import { db } from './firebaseConfig'; // Firestore 초기화 파일
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 
 // 스크린 import
 import HomeScreen from './screens/HomeScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import SearchScreen from './screens/SearchScreen';
 
-
-// 음악 데이터 (예시로 JSON 파일에서 로드된 데이터로 가정)
-const musicData = [
-  {
-    title: "Gradation",
-    artist: "10cm",
-    priority: 1,
-    cover: require("./assets/images/gradation.jpg"),
-    youtubeUrl: "https://www.youtube.com/watch?v=fbmStVcCL8s&list=PLtmZj29rItKfvHjuY-ykhEiCC2EbBW2J1"
-  },
-  {
-    title: "한 페이지가 될 수 있게",
-    artist: "DAY6",
-    priority: 2,
-    cover: require("./assets/images/gradation.jpg"),
-    youtubeUrl: "https://www.youtube.com/watch?v=-9fC6oDFl5k&list=PLtmZj29rItKfvHjuY-ykhEiCC2EbBW2J1&index=2"
-  },
-  {
-    title: "사건의 지평선",
-    artist: "YOUNHA",
-    priority: 3,
-    cover: require("./assets/images/gradation.jpg"),
-    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
-  },
-  {
-    title: "music4",
-    artist: "폴킴",
-    priority: 4,
-    cover: require("./assets/images/gradation.jpg"),
-    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
-  },
-  {
-    title: "music5",
-    artist: "아이유",
-    priority: 5,
-    cover: require("./assets/images/gradation.jpg"),
-    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
-  },
-  {
-      title: "music6",
-      artist: "아이유",
-      priority: 6,
-      cover: require("./assets/images/gradation.jpg"),
-      youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
-  },
-  {
-    title: "music7",
-    artist: "아이유",
-    priority: 7,
-    cover: require("./assets/images/gradation.jpg"),
-    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
-  },
-  {
-    title: "music8",
-    artist: "아이유",
-    priority: 8,
-    cover: require("./assets/images/gradation.jpg"),
-    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
-  },
-  {
-    title: "music9",
-    artist: "아이유",
-    priority: 9,
-    cover: require("./assets/images/gradation.jpg"),
-    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
-  },
-  {
-    title: "music10",
-    artist: "아이유",
-    priority: 10,
-    cover: require("./assets/images/gradation.jpg"),
-    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
-  },
-  {
-    title: "music11",
-    artist: "아이유",
-    priority: 11,
-    cover: require("./assets/images/gradation.jpg"),
-    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
-  },
-  {
-    title: "music12",
-    artist: "아이유",
-    priority: 12,
-    cover: require("./assets/images/gradation.jpg"),
-    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
-  },
-  {
-    title: "music13",
-    artist: "아이유",
-    priority: 13,
-    cover: require("./assets/images/gradation.jpg"),
-    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
-  },
-  {
-    title: "music14",
-    artist: "아이유",
-    priority: 14,
-    cover: require("./assets/images/gradation.jpg"),
-    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
-  }
-
-];
-
 // Home 화면 컴포넌트
 function HomeScreenComponent() {
   const [songs, setSongs] = React.useState([]);
+  const [loading, setLoading] = React.useState<boolean>(true);
   const [searchText, setSearchText] = React.useState('');
   const [isModalVisible, setIsModalVisible] = React.useState(false);
   const [newSongTitle, setNewSongTitle] = React.useState('');
   const [newSongArtist, setNewSongArtist] = React.useState('');
+  const [newSongId, setNewSongId] = React.useState('');
   const [isDeleteModalVisible, setIsDeleteModalVisible] = React.useState(false);
   const [selectedSongIndex, setSelectedSongIndex] = React.useState(null);
   // 여러 스와이프 진행 상태 관리
-    const [swipeProgress, setSwipeProgress] = React.useState(
-      musicData.map(() => new Animated.Value(0)) // 각 항목에 대해 Animated.Value 초기화
-    );
+  const [swipeProgress, setSwipeProgress] = React.useState([]);
+  const swipeableRefs = React.useRef([]); // 각 Swipeable을 저장할 ref 배열
 
-
-  // 데이터 정렬 및 상태 초기화
   React.useEffect(() => {
-    const sortedSongs = [...musicData].sort((a, b) => a.priority - b.priority);
-    setSongs(sortedSongs);
+    const fetchSongs = async () => {
+      try {
+        const categoriesSnapshot = await getDocs(collection(db, 'categories'));
+        const allSongs: Song[] = [];
+
+        for (const categoryDoc of categoriesSnapshot.docs) {
+          const songsCollection = collection(db, 'categories', categoryDoc.id, 'songs');
+          const songsSnapshot = await getDocs(query(songsCollection, orderBy('count', 'desc')));
+
+          songsSnapshot.forEach(songDoc => {
+            const data = songDoc.data();
+            if (data.youtubeId) {
+              allSongs.push({
+                id: songDoc.id,
+                title: data.title,
+                artist: data.artist,
+                youtubeId: data.youtubeId,
+                count: data.count || 0,
+                isYES: data.isYES || false,
+              });
+            } else {
+              console.warn(`Song with ID ${songDoc.id} is missing youtubeId.`);
+            }
+          });
+        }
+
+        console.log('Fetched Songs:', allSongs); // 디버깅 로그 추가
+
+        if (allSongs.length === 0) {
+          console.warn('No songs fetched from Firestore.');
+        }
+
+        setSongs(allSongs);
+        setLoading(false);
+        const sortedSongs = [...allSongs].sort((a, b) => a.youtubeId - b.youtubeId);
+        setSongs(sortedSongs);
+        setSwipeProgress(sortedSongs.map(() => new Animated.Value(0)));
+      } catch (err) {
+        console.error('Error fetching songs:', err);
+        setError('노래를 불러오는 데 실패했습니다.');
+        setLoading(false);
+      }
+    };
+
+    fetchSongs();
   }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#6200ee" />
+        <Text style={styles.loadingText}>로딩 중...</Text>
+      </View>
+    );
+  }
+
+  if (songs.length === 0) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text>노래가 없습니다.</Text>
+      </View>
+    );
+  }
 
   // 검색어에 맞게 필터링된 음악 데이터
   const filteredSongs = songs.filter(
@@ -144,6 +102,17 @@ function HomeScreenComponent() {
       song.title.toLowerCase().includes(searchText.toLowerCase()) ||
       song.artist.toLowerCase().includes(searchText.toLowerCase())
   );
+
+  // 음악 목록 셔플 함수
+  const shuffleSongs = () => {
+    swipeableRefs.current.forEach((swipeable) => {
+      if(swipeable != null)
+        swipeable.close(); // open 상태인 스와이프를 닫음
+    });
+    const shuffledSongs = [...songs].sort(() => Math.random() - 0.5);
+    setSongs(shuffledSongs);
+    setSwipeProgress(songs.map(() => new Animated.Value(0)));
+  };
 
   // 유튜브 링크 열기
   const handleMusicClick = (url) => {
@@ -154,33 +123,39 @@ function HomeScreenComponent() {
 
   // 노래 삭제 처리
   const handleDeleteSong = () => {
-      // 삭제된 항목의 swipeProgress를 초기화
-      setSwipeProgress((prevProgress) => {
-        const updatedProgress = [...prevProgress];
-        updatedProgress.splice(selectedSongIndex, 1); // 삭제된 항목의 progress 초기화
-        return updatedProgress;
-      });
-      setSongs((prevSongs) => {
-        const updatedSongs = [...prevSongs];
-        updatedSongs.splice(selectedSongIndex, 1);
-        return updatedSongs;
-      });
-      setIsDeleteModalVisible(false);
-    };
+    // 삭제된 항목의 swipeProgress를 초기화
+    setSwipeProgress((prevProgress) => {
+      const updatedProgress = [...prevProgress];
+      updatedProgress.splice(selectedSongIndex, 1); // 삭제된 항목의 progress 초기화
+      return updatedProgress;
+    });
+
+    setSongs((prevSongs) => {
+      const updatedSongs = [...prevSongs];
+      updatedSongs.splice(selectedSongIndex, 1);
+      return updatedSongs;
+    });
+    setIsDeleteModalVisible(false);
+  };
 
   // 노래 추가 처리
   const handleAddSong = () => {
-    if (newSongTitle.trim() && newSongArtist.trim()) {
+    if (newSongTitle.trim() && newSongArtist.trim() && newSongId.trim()) {
+      if (songs.some((song) => song.youtubeId === newSongId)) {
+        Alert.alert('Invalid Input', 'This song already exists in the playlist');
+        return;
+      }
       const newSong = {
         title: newSongTitle,
         artist: newSongArtist,
-        priority: songs.length + 1,
-        cover: require('./assets/images/gradation.jpg'), // 기본 커버
-        youtubeUrl: 'https://www.youtube.com', // 기본 URL 지정
+        id: songs.length + 1,
+        youtubeId: newSongId
       };
       setSongs((prevSongs) => [...prevSongs, newSong]);
+      setSwipeProgress((prevSwipeProgress) => [...prevSwipeProgress, new Animated.Value(0)]);
       setNewSongTitle('');
       setNewSongArtist('');
+      setNewSongId('');
       setIsModalVisible(false);
     } else {
       Alert.alert('Invalid Input', 'Please provide both title and artist.');
@@ -196,6 +171,7 @@ function HomeScreenComponent() {
   const handleCancel = () => {
     setNewSongTitle('');
     setNewSongArtist('');
+    setNewSongId('');
     setIsModalVisible(false);
   };
 
@@ -229,11 +205,19 @@ function HomeScreenComponent() {
       {/* 상단 타이틀 및 버튼 */}
       <View style={styles.headerContainer}>
         <Text style={styles.title}>Music List</Text>
+        {/* 셔플 버튼 */}
+        <TouchableOpacity
+          style={styles.shuffleButton}
+          onPress={shuffleSongs}
+        >
+          <Icon name="shuffle" size={20} color="#000" />
+        </TouchableOpacity>
+        {/* 음악 추가 버튼 */}
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => setIsModalVisible(true)}
         >
-          <Text style={styles.addButtonText}>+ Add</Text>
+          <Icon name="add" size={20} color="#000" />
         </TouchableOpacity>
       </View>
 
@@ -248,16 +232,22 @@ function HomeScreenComponent() {
       {/* 음악 리스트 출력 */}
       <FlatList
         data={filteredSongs}
-        keyExtractor={(item) => item.title}
+        keyExtractor={(item) => item.youtubeId}
         renderItem={({ item, index }) => (
           <Swipeable
+            ref={(ref) => (swipeableRefs.current[index] = ref)} // ref를 배열에 저장
             renderRightActions={() => renderRightActions(index)}
             onSwipeableWillOpen={() => handleSwipeProgress(index, 1)} // 스와이프 시작 시 애니메이션 시작
             onSwipeableWillClose={() => handleSwipeProgress(index, 0)} // 스와이프 종료 시 애니메이션 종료
           >
-            <TouchableOpacity onPress={() => handleMusicClick(item.youtubeUrl)}>
+            <TouchableOpacity onPress={() => handleMusicClick(getYouTubeUrl(item.youtubeId))}>
               <View style={styles.item}>
-                <Image source={item.cover} style={styles.albumCover} />
+                <View style={styles.albumCover}>
+                  <Image
+                    source={{ uri: getYouTubeThumbnail(item.youtubeId) }}
+                    style={styles.thumbnail}
+                  />
+                </View>
                 <View style={styles.textContainer}>
                   <Text style={styles.musicTitle}>{item.title}</Text>
                   <Text style={styles.musicArtist}>{item.artist}</Text>
@@ -289,6 +279,12 @@ function HomeScreenComponent() {
               placeholder="Artist"
               value={newSongArtist}
               onChangeText={setNewSongArtist}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="YoutubeId"
+              value={newSongId}
+              onChangeText={setNewSongId}
             />
             <View style={styles.modalButtons}>
               <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
@@ -326,12 +322,6 @@ function HomeScreenComponent() {
     </View>
   );
 }
-
-
-
-
-
-
 
 // Bottom Tabs 생성
 const Tab = createBottomTabNavigator();
@@ -411,17 +401,19 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
   },
+  shuffleButton: {
+    backgroundColor: '#d9d9d9', // 셔플 버튼 배경 색상
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+    marginRight: -30,
+  },
   addButton: {
-    backgroundColor: '#17eb26',
+    backgroundColor: '#d9d9d9',
     marginLeft: -70,
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 5,
-  },
-  addButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
   },
   searchInput: {
     height: 40,
@@ -444,6 +436,15 @@ const styles = StyleSheet.create({
     height: 50,
     marginRight: 10,
     borderRadius: 5,
+    overflow: 'hidden', // 부모 컨테이너를 넘는 이미지를 숨김
+    resizeMode: 'cover', // 이미지를 컨테이너에 맞추되, 비율 유지
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  thumbnail: {
+    position: 'absolute', // 썸네일 위치를 고정
+    width: 70, // 확대된 썸네일 너비
+    height: 70, // 확대된 썸네일 높이
   },
   textContainer: {
     flex: 1,
@@ -519,4 +520,13 @@ const styles = StyleSheet.create({
     width: 80,
     height: '100%',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 18,
+    color: '#000',
+  }
 });
