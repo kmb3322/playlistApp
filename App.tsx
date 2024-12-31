@@ -204,7 +204,20 @@ function HomeScreenComponent() {
     <View style={styles.container}>
       {/* 상단 타이틀 및 버튼 */}
       <View style={styles.headerContainer}>
-        <Text style={styles.title}>Music List</Text>
+        <Text style={styles.title}>내 주변의</Text>
+
+        {/* 음악 추가 버튼 */}
+        <TouchableOpacity
+         style={styles.addButton}
+         onPress={() => setIsModalVisible(true)}
+         >
+          <Icon name="add" size={20} color="#000" />
+          </TouchableOpacity>
+         </View>
+
+         <View style={styles.headerContainer2}>
+
+        <Text style={styles.title2}>{'\n'}플레이리스트</Text>
         {/* 셔플 버튼 */}
         <TouchableOpacity
           style={styles.shuffleButton}
@@ -212,19 +225,15 @@ function HomeScreenComponent() {
         >
           <Icon name="shuffle" size={20} color="#000" />
         </TouchableOpacity>
-        {/* 음악 추가 버튼 */}
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => setIsModalVisible(true)}
-        >
-          <Icon name="add" size={20} color="#000" />
-        </TouchableOpacity>
-      </View>
+         </View>
+
+
+
 
       {/* 검색 입력란 */}
       <TextInput
         style={styles.searchInput}
-        placeholder="Search music..."
+        placeholder="검색할 음악"
         value={searchText}
         onChangeText={(text) => setSearchText(text)}
       />
@@ -267,31 +276,31 @@ function HomeScreenComponent() {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add New Song</Text>
+            <Text style={styles.modalTitle}>음악 추가하기</Text>
             <TextInput
               style={styles.input}
-              placeholder="Song Title"
+              placeholder="음악 제목"
               value={newSongTitle}
               onChangeText={setNewSongTitle}
             />
             <TextInput
               style={styles.input}
-              placeholder="Artist"
+              placeholder="아티스트"
               value={newSongArtist}
               onChangeText={setNewSongArtist}
             />
             <TextInput
               style={styles.input}
-              placeholder="YoutubeId"
+              placeholder="Youtube id"
               value={newSongId}
               onChangeText={setNewSongId}
             />
             <View style={styles.modalButtons}>
               <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={styles.cancelButtonText}>취소</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.saveButton} onPress={handleAddSong}>
-                <Text style={styles.saveButtonText}>Add</Text>
+                <Text style={styles.saveButtonText}>추가</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -395,18 +404,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
   },
+  headerContainer2: {
+      marginTop:-60,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 20,
+    },
   title: {
-    fontSize: 24,
+      marginTop:-20,
+    fontSize: 30,
     fontWeight: 'bold',
   },
+  title2: {
+      fontSize: 30,
+      fontWeight: 'bold',
+    },
   shuffleButton: {
     backgroundColor: '#FFF', // 셔플 버튼 배경 색상
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 5,
-    marginRight: -30,
+    marginLeft: -5,
+    marginTop: 35,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -415,7 +436,9 @@ const styles = StyleSheet.create({
   },
   addButton: {
     backgroundColor: '#FFF',
-    marginLeft: -70,
+    marginRight:0,
+    marginTop:10,
+    marginBottom:30,
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 5,
@@ -511,7 +534,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   saveButton: {
-    backgroundColor: '#17eb26',
+    backgroundColor: '#6200ee',
     padding: 10,
     borderRadius: 5,
     flex: 1,

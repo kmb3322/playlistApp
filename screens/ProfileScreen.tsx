@@ -106,7 +106,7 @@ const ProfileScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       {/* 헤더 추가 */}
-      <Text style={styles.header}>내가 좋아한 음악</Text>
+      <Text style={styles.header}>지금 인기있는 음악</Text>
 
       <ScrollView contentContainerStyle={styles.galleryContainer}>
         <View style={styles.grid}>
@@ -148,9 +148,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   header: { // 헤더 스타일
-    fontSize: 25,
+    fontSize: 30,
     fontWeight: 'bold',
-    marginTop: 10,
+    marginTop: 15,
     marginBottom: 10,
     marginLeft: 10,
     textAlign: 'left',
