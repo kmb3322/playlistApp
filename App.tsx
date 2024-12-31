@@ -29,6 +29,7 @@ function HomeScreenComponent() {
   const [selectedSongIndex, setSelectedSongIndex] = React.useState(null);
   // 여러 스와이프 진행 상태 관리
   const [swipeProgress, setSwipeProgress] = React.useState([]);
+  const swipeableRefs = React.useRef([]); // 각 Swipeable을 저장할 ref 배열
 
   React.useEffect(() => {
     const fetchSongs = async () => {
@@ -82,7 +83,7 @@ function HomeScreenComponent() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#6200ee" />
-        <Text>로딩 중...</Text>
+        <Text style={styles.loadingText}>로딩 중...</Text>
       </View>
     );
   }
@@ -102,6 +103,17 @@ function HomeScreenComponent() {
       song.artist.toLowerCase().includes(searchText.toLowerCase())
   );
 
+  // 음악 목록 셔플 함수
+  const shuffleSongs = () => {
+    swipeableRefs.current.forEach((swipeable) => {
+      if(swipeable != null)
+        swipeable.close(); // open 상태인 스와이프를 닫음
+    });
+    const shuffledSongs = [...songs].sort(() => Math.random() - 0.5);
+    setSongs(shuffledSongs);
+    setSwipeProgress(songs.map(() => new Animated.Value(0)));
+  };
+
   // 유튜브 링크 열기
   const handleMusicClick = (url) => {
     Linking.openURL(url).catch((err) => {
@@ -111,19 +123,20 @@ function HomeScreenComponent() {
 
   // 노래 삭제 처리
   const handleDeleteSong = () => {
-      // 삭제된 항목의 swipeProgress를 초기화
-      setSwipeProgress((prevProgress) => {
-        const updatedProgress = [...prevProgress];
-        updatedProgress.splice(selectedSongIndex, 1); // 삭제된 항목의 progress 초기화
-        return updatedProgress;
-      });
-      setSongs((prevSongs) => {
-        const updatedSongs = [...prevSongs];
-        updatedSongs.splice(selectedSongIndex, 1);
-        return updatedSongs;
-      });
-      setIsDeleteModalVisible(false);
-    };
+    // 삭제된 항목의 swipeProgress를 초기화
+    setSwipeProgress((prevProgress) => {
+      const updatedProgress = [...prevProgress];
+      updatedProgress.splice(selectedSongIndex, 1); // 삭제된 항목의 progress 초기화
+      return updatedProgress;
+    });
+
+    setSongs((prevSongs) => {
+      const updatedSongs = [...prevSongs];
+      updatedSongs.splice(selectedSongIndex, 1);
+      return updatedSongs;
+    });
+    setIsDeleteModalVisible(false);
+  };
 
   // 노래 추가 처리
   const handleAddSong = () => {
@@ -192,6 +205,14 @@ function HomeScreenComponent() {
       {/* 상단 타이틀 및 버튼 */}
       <View style={styles.headerContainer}>
         <Text style={styles.title}>Music List</Text>
+        {/* 셔플 버튼 */}
+        <TouchableOpacity
+          style={styles.shuffleButton}
+          onPress={shuffleSongs}
+        >
+          <Icon name="shuffle" size={20} color="#000" />
+        </TouchableOpacity>
+        {/* 음악 추가 버튼 */}
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => setIsModalVisible(true)}
@@ -214,6 +235,7 @@ function HomeScreenComponent() {
         keyExtractor={(item) => item.youtubeId}
         renderItem={({ item, index }) => (
           <Swipeable
+            ref={(ref) => (swipeableRefs.current[index] = ref)} // ref를 배열에 저장
             renderRightActions={() => renderRightActions(index)}
             onSwipeableWillOpen={() => handleSwipeProgress(index, 1)} // 스와이프 시작 시 애니메이션 시작
             onSwipeableWillClose={() => handleSwipeProgress(index, 0)} // 스와이프 종료 시 애니메이션 종료
@@ -375,6 +397,13 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
   },
+  shuffleButton: {
+    backgroundColor: '#d9d9d9', // 셔플 버튼 배경 색상
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+    marginRight: 10,
+  },
   addButton: {
     backgroundColor: '#17eb26',
     marginLeft: -70,
@@ -492,4 +521,13 @@ const styles = StyleSheet.create({
     width: 80,
     height: '100%',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 18,
+    color: '#000',
+  }
 });
