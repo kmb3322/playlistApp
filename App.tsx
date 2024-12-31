@@ -7,6 +7,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Provider as PaperProvider } from 'react-native-paper'; // 추가
 import { Swipeable, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { getYouTubeThumbnail, getYouTubeUrl } from './utils/youtubeUtils';
 
 // 스크린 import
 import HomeScreen from './screens/HomeScreen';
@@ -17,104 +18,53 @@ import SearchScreen from './screens/SearchScreen';
 // 음악 데이터 (예시로 JSON 파일에서 로드된 데이터로 가정)
 const musicData = [
   {
+    id: 1,
     title: "Gradation",
     artist: "10cm",
-    priority: 1,
-    cover: require("./assets/images/gradation.jpg"),
-    youtubeUrl: "https://www.youtube.com/watch?v=fbmStVcCL8s&list=PLtmZj29rItKfvHjuY-ykhEiCC2EbBW2J1"
+    youtubeId: "fbmStVcCL8s",
   },
   {
-    title: "한 페이지가 될 수 있게",
-    artist: "DAY6",
-    priority: 2,
-    cover: require("./assets/images/gradation.jpg"),
-    youtubeUrl: "https://www.youtube.com/watch?v=-9fC6oDFl5k&list=PLtmZj29rItKfvHjuY-ykhEiCC2EbBW2J1&index=2"
+    id: 2,
+    title: "광화문에서",
+    artist: "규현",
+    youtubeId: "GAdFpZHTh1I",
   },
   {
-    title: "사건의 지평선",
-    artist: "YOUNHA",
-    priority: 3,
-    cover: require("./assets/images/gradation.jpg"),
-    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
+    id: 3,
+    title: "Hello",
+    artist: "허각",
+    youtubeId: "R9qjc2bvdrY",
   },
   {
-    title: "music4",
-    artist: "폴킴",
-    priority: 4,
-    cover: require("./assets/images/gradation.jpg"),
-    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
+    id: 4,
+    title: "Hello1",
+    artist: "허각",
+    youtubeId: "R9qjc2bvdrY",
   },
   {
-    title: "music5",
-    artist: "아이유",
-    priority: 5,
-    cover: require("./assets/images/gradation.jpg"),
-    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
+    id: 5,
+    title: "Hello2",
+    artist: "허각",
+    youtubeId: "R9qjc2bvdrY",
   },
   {
-      title: "music6",
-      artist: "아이유",
-      priority: 6,
-      cover: require("./assets/images/gradation.jpg"),
-      youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
+    id: 6,
+    title: "Hello3",
+    artist: "허각",
+    youtubeId: "R9qjc2bvdrY",
   },
   {
-    title: "music7",
-    artist: "아이유",
-    priority: 7,
-    cover: require("./assets/images/gradation.jpg"),
-    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
+    id: 7,
+    title: "Hello4",
+    artist: "허각",
+    youtubeId: "R9qjc2bvdrY",
   },
   {
-    title: "music8",
-    artist: "아이유",
-    priority: 8,
-    cover: require("./assets/images/gradation.jpg"),
-    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
+    id: 8,
+    title: "Hello5",
+    artist: "허각",
+    youtubeId: "R9qjc2bvdrY",
   },
-  {
-    title: "music9",
-    artist: "아이유",
-    priority: 9,
-    cover: require("./assets/images/gradation.jpg"),
-    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
-  },
-  {
-    title: "music10",
-    artist: "아이유",
-    priority: 10,
-    cover: require("./assets/images/gradation.jpg"),
-    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
-  },
-  {
-    title: "music11",
-    artist: "아이유",
-    priority: 11,
-    cover: require("./assets/images/gradation.jpg"),
-    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
-  },
-  {
-    title: "music12",
-    artist: "아이유",
-    priority: 12,
-    cover: require("./assets/images/gradation.jpg"),
-    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
-  },
-  {
-    title: "music13",
-    artist: "아이유",
-    priority: 13,
-    cover: require("./assets/images/gradation.jpg"),
-    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
-  },
-  {
-    title: "music14",
-    artist: "아이유",
-    priority: 14,
-    cover: require("./assets/images/gradation.jpg"),
-    youtubeUrl: "https://youtu.be/0-q1KafFCLU?si=oGX0i71bL0EkWxP3"
-  }
-
 ];
 
 // Home 화면 컴포넌트
@@ -124,6 +74,7 @@ function HomeScreenComponent() {
   const [isModalVisible, setIsModalVisible] = React.useState(false);
   const [newSongTitle, setNewSongTitle] = React.useState('');
   const [newSongArtist, setNewSongArtist] = React.useState('');
+  const [newSongId, setNewSongId] = React.useState('');
   const [isDeleteModalVisible, setIsDeleteModalVisible] = React.useState(false);
   const [selectedSongIndex, setSelectedSongIndex] = React.useState(null);
   // 여러 스와이프 진행 상태 관리
@@ -134,8 +85,9 @@ function HomeScreenComponent() {
 
   // 데이터 정렬 및 상태 초기화
   React.useEffect(() => {
-    const sortedSongs = [...musicData].sort((a, b) => a.priority - b.priority);
+    const sortedSongs = [...musicData].sort((a, b) => a.id - b.id);
     setSongs(sortedSongs);
+    setSwipeProgress(sortedSongs.map(() => new Animated.Value(0)));
   }, []);
 
   // 검색어에 맞게 필터링된 음악 데이터
@@ -170,17 +122,18 @@ function HomeScreenComponent() {
 
   // 노래 추가 처리
   const handleAddSong = () => {
-    if (newSongTitle.trim() && newSongArtist.trim()) {
+    if (newSongTitle.trim() && newSongArtist.trim() && newSongId.trim()) {
       const newSong = {
         title: newSongTitle,
         artist: newSongArtist,
-        priority: songs.length + 1,
-        cover: require('./assets/images/gradation.jpg'), // 기본 커버
-        youtubeUrl: 'https://www.youtube.com', // 기본 URL 지정
+        id: songs.length + 1,
+        youtubeId: newSongId
       };
       setSongs((prevSongs) => [...prevSongs, newSong]);
+      setSwipeProgress((prevSwipeProgress) => [...prevSwipeProgress, new Animated.Value(0)]);
       setNewSongTitle('');
       setNewSongArtist('');
+      setNewSongId('');
       setIsModalVisible(false);
     } else {
       Alert.alert('Invalid Input', 'Please provide both title and artist.');
@@ -196,6 +149,7 @@ function HomeScreenComponent() {
   const handleCancel = () => {
     setNewSongTitle('');
     setNewSongArtist('');
+    setNewSongId('');
     setIsModalVisible(false);
   };
 
@@ -248,16 +202,16 @@ function HomeScreenComponent() {
       {/* 음악 리스트 출력 */}
       <FlatList
         data={filteredSongs}
-        keyExtractor={(item) => item.title}
+        keyExtractor={(item) => item.id}
         renderItem={({ item, index }) => (
           <Swipeable
             renderRightActions={() => renderRightActions(index)}
             onSwipeableWillOpen={() => handleSwipeProgress(index, 1)} // 스와이프 시작 시 애니메이션 시작
             onSwipeableWillClose={() => handleSwipeProgress(index, 0)} // 스와이프 종료 시 애니메이션 종료
           >
-            <TouchableOpacity onPress={() => handleMusicClick(item.youtubeUrl)}>
+            <TouchableOpacity onPress={() => handleMusicClick(getYouTubeUrl(item.youtubeId))}>
               <View style={styles.item}>
-                <Image source={item.cover} style={styles.albumCover} />
+                <Image source={{ uri: getYouTubeThumbnail(item.youtubeId) }} style={styles.albumCover} />
                 <View style={styles.textContainer}>
                   <Text style={styles.musicTitle}>{item.title}</Text>
                   <Text style={styles.musicArtist}>{item.artist}</Text>
@@ -289,6 +243,12 @@ function HomeScreenComponent() {
               placeholder="Artist"
               value={newSongArtist}
               onChangeText={setNewSongArtist}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="YoutubeId"
+              value={newSongId}
+              onChangeText={setNewSongId}
             />
             <View style={styles.modalButtons}>
               <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
@@ -326,12 +286,6 @@ function HomeScreenComponent() {
     </View>
   );
 }
-
-
-
-
-
-
 
 // Bottom Tabs 생성
 const Tab = createBottomTabNavigator();
