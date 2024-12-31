@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
   thumbnailContainer: {
     position: 'relative',
     marginRight: 5,
-    marginBottom: 10,
+    marginBottom: 5,
     aspectRatio:1,
     overflow: 'hidden',
   },
