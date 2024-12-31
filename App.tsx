@@ -217,7 +217,7 @@ function HomeScreenComponent() {
           style={styles.addButton}
           onPress={() => setIsModalVisible(true)}
         >
-          <Text style={styles.addButtonText}>+ Add</Text>
+          <Icon name="add" size={20} color="#000" />
         </TouchableOpacity>
       </View>
 
@@ -402,19 +402,14 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 5,
-    marginRight: 10,
+    marginRight: -30,
   },
   addButton: {
-    backgroundColor: '#17eb26',
+    backgroundColor: '#d9d9d9',
     marginLeft: -70,
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 5,
-  },
-  addButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
   },
   searchInput: {
     height: 40,
