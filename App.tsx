@@ -1,75 +1,25 @@
 // Music List에 노래를 추가할 버튼을 추가한 코드
 
 import * as React from 'react';
-import { Text, View, FlatList, StyleSheet, Image, TouchableOpacity, Linking, TextInput, Alert, Button, Modal, Animated } from 'react-native';
+import { Text, View, FlatList, StyleSheet, Image, TouchableOpacity, Linking, TextInput, Alert, Button, Modal, Animated, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Provider as PaperProvider } from 'react-native-paper'; // 추가
 import { Swipeable, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { getYouTubeThumbnail, getYouTubeUrl } from './utils/youtubeUtils';
+import { db } from './firebaseConfig'; // Firestore 초기화 파일
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 
 // 스크린 import
 import HomeScreen from './screens/HomeScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import SearchScreen from './screens/SearchScreen';
 
-
-// 음악 데이터 (예시로 JSON 파일에서 로드된 데이터로 가정)
-const musicData = [
-  {
-    id: 1,
-    title: "Gradation",
-    artist: "10cm",
-    youtubeId: "fbmStVcCL8s",
-  },
-  {
-    id: 2,
-    title: "광화문에서",
-    artist: "규현",
-    youtubeId: "GAdFpZHTh1I",
-  },
-  {
-    id: 3,
-    title: "Hello",
-    artist: "허각",
-    youtubeId: "R9qjc2bvdrY",
-  },
-  {
-    id: 4,
-    title: "나의 X에게",
-    artist: "경서",
-    youtubeId: "VY_BU1Ja_TM",
-  },
-  {
-    id: 5,
-    title: "기억을 걷는 시간",
-    artist: "NELL",
-    youtubeId: "VZnfZ14fIig",
-  },
-  {
-    id: 6,
-    title: "포장마차",
-    artist: "황인욱",
-    youtubeId: "5s_0WEjgW0Q",
-  },
-  {
-    id: 7,
-    title: "응급실",
-    artist: "izi",
-    youtubeId: "E-BvyQb7mWE",
-  },
-  {
-    id: 8,
-    title: "사랑인가 봐",
-    artist: "멜로망스",
-    youtubeId: "0e7uplpFJdE",
-  },
-];
-
 // Home 화면 컴포넌트
 function HomeScreenComponent() {
   const [songs, setSongs] = React.useState([]);
+  const [loading, setLoading] = React.useState<boolean>(true);
   const [searchText, setSearchText] = React.useState('');
   const [isModalVisible, setIsModalVisible] = React.useState(false);
   const [newSongTitle, setNewSongTitle] = React.useState('');
@@ -78,17 +28,72 @@ function HomeScreenComponent() {
   const [isDeleteModalVisible, setIsDeleteModalVisible] = React.useState(false);
   const [selectedSongIndex, setSelectedSongIndex] = React.useState(null);
   // 여러 스와이프 진행 상태 관리
-    const [swipeProgress, setSwipeProgress] = React.useState(
-      musicData.map(() => new Animated.Value(0)) // 각 항목에 대해 Animated.Value 초기화
-    );
+  const [swipeProgress, setSwipeProgress] = React.useState([]);
 
-
-  // 데이터 정렬 및 상태 초기화
   React.useEffect(() => {
-    const sortedSongs = [...musicData].sort((a, b) => a.id - b.id);
-    setSongs(sortedSongs);
-    setSwipeProgress(sortedSongs.map(() => new Animated.Value(0)));
+    const fetchSongs = async () => {
+      try {
+        const categoriesSnapshot = await getDocs(collection(db, 'categories'));
+        const allSongs: Song[] = [];
+
+        for (const categoryDoc of categoriesSnapshot.docs) {
+          const songsCollection = collection(db, 'categories', categoryDoc.id, 'songs');
+          const songsSnapshot = await getDocs(query(songsCollection, orderBy('count', 'desc')));
+
+          songsSnapshot.forEach(songDoc => {
+            const data = songDoc.data();
+            if (data.youtubeId) {
+              allSongs.push({
+                id: songDoc.id,
+                title: data.title,
+                artist: data.artist,
+                youtubeId: data.youtubeId,
+                count: data.count || 0,
+                isYES: data.isYES || false,
+              });
+            } else {
+              console.warn(`Song with ID ${songDoc.id} is missing youtubeId.`);
+            }
+          });
+        }
+
+        console.log('Fetched Songs:', allSongs); // 디버깅 로그 추가
+
+        if (allSongs.length === 0) {
+          console.warn('No songs fetched from Firestore.');
+        }
+
+        setSongs(allSongs);
+        setLoading(false);
+        const sortedSongs = [...allSongs].sort((a, b) => a.youtubeId - b.youtubeId);
+        setSongs(sortedSongs);
+        setSwipeProgress(sortedSongs.map(() => new Animated.Value(0)));
+      } catch (err) {
+        console.error('Error fetching songs:', err);
+        setError('노래를 불러오는 데 실패했습니다.');
+        setLoading(false);
+      }
+    };
+
+    fetchSongs();
   }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#6200ee" />
+        <Text>로딩 중...</Text>
+      </View>
+    );
+  }
+
+  if (songs.length === 0) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text>노래가 없습니다.</Text>
+      </View>
+    );
+  }
 
   // 검색어에 맞게 필터링된 음악 데이터
   const filteredSongs = songs.filter(
