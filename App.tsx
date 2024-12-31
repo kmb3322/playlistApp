@@ -37,33 +37,33 @@ const musicData = [
   },
   {
     id: 4,
-    title: "Hello1",
-    artist: "허각",
-    youtubeId: "R9qjc2bvdrY",
+    title: "나의 X에게",
+    artist: "경서",
+    youtubeId: "VY_BU1Ja_TM",
   },
   {
     id: 5,
-    title: "Hello2",
-    artist: "허각",
-    youtubeId: "R9qjc2bvdrY",
+    title: "기억을 걷는 시간",
+    artist: "NELL",
+    youtubeId: "VZnfZ14fIig",
   },
   {
     id: 6,
-    title: "Hello3",
-    artist: "허각",
-    youtubeId: "R9qjc2bvdrY",
+    title: "포장마차",
+    artist: "황인욱",
+    youtubeId: "5s_0WEjgW0Q",
   },
   {
     id: 7,
-    title: "Hello4",
-    artist: "허각",
-    youtubeId: "R9qjc2bvdrY",
+    title: "응급실",
+    artist: "izi",
+    youtubeId: "E-BvyQb7mWE",
   },
   {
     id: 8,
-    title: "Hello5",
-    artist: "허각",
-    youtubeId: "R9qjc2bvdrY",
+    title: "사랑인가 봐",
+    artist: "멜로망스",
+    youtubeId: "0e7uplpFJdE",
   },
 ];
 
@@ -123,6 +123,10 @@ function HomeScreenComponent() {
   // 노래 추가 처리
   const handleAddSong = () => {
     if (newSongTitle.trim() && newSongArtist.trim() && newSongId.trim()) {
+      if (songs.some((song) => song.youtubeId === newSongId)) {
+        Alert.alert('Invalid Input', 'This song already exists in the playlist');
+        return;
+      }
       const newSong = {
         title: newSongTitle,
         artist: newSongArtist,
@@ -202,7 +206,7 @@ function HomeScreenComponent() {
       {/* 음악 리스트 출력 */}
       <FlatList
         data={filteredSongs}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.youtubeId}
         renderItem={({ item, index }) => (
           <Swipeable
             renderRightActions={() => renderRightActions(index)}
@@ -211,7 +215,12 @@ function HomeScreenComponent() {
           >
             <TouchableOpacity onPress={() => handleMusicClick(getYouTubeUrl(item.youtubeId))}>
               <View style={styles.item}>
-                <Image source={{ uri: getYouTubeThumbnail(item.youtubeId) }} style={styles.albumCover} />
+                <View style={styles.albumCover}>
+                  <Image
+                    source={{ uri: getYouTubeThumbnail(item.youtubeId) }}
+                    style={styles.thumbnail}
+                  />
+                </View>
                 <View style={styles.textContainer}>
                   <Text style={styles.musicTitle}>{item.title}</Text>
                   <Text style={styles.musicArtist}>{item.artist}</Text>
@@ -394,6 +403,15 @@ const styles = StyleSheet.create({
     height: 50,
     marginRight: 10,
     borderRadius: 5,
+    overflow: 'hidden', // 부모 컨테이너를 넘는 이미지를 숨김
+    resizeMode: 'cover', // 이미지를 컨테이너에 맞추되, 비율 유지
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  thumbnail: {
+    position: 'absolute', // 썸네일 위치를 고정
+    width: 70, // 확대된 썸네일 너비
+    height: 70, // 확대된 썸네일 높이
   },
   textContainer: {
     flex: 1,
