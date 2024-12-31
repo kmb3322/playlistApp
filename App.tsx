@@ -402,27 +402,37 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   shuffleButton: {
-    backgroundColor: '#d9d9d9', // 셔플 버튼 배경 색상
+    backgroundColor: '#FFF', // 셔플 버튼 배경 색상
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 5,
     marginRight: -30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5, // Android 그림자
   },
   addButton: {
-    backgroundColor: '#d9d9d9',
+    backgroundColor: '#FFF',
     marginLeft: -70,
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.10,
+    shadowRadius: 3.84,
+    elevation: 5, // Android 그림자
   },
   searchInput: {
+    backgroundColor: '#FFF',
     height: 40,
     borderColor: '#ddd',
     borderWidth: 1,
     marginBottom: 20,
     paddingLeft: 10,
-    borderRadius: 5,
-
+    borderRadius: 20,
   },
   item: {
     flexDirection: 'row',
