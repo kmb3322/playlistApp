@@ -61,21 +61,20 @@ const NextCard = ({ song, index }: { song: Song; index: number }) => {
   useEffect(() => {
     const animationDelay = index * 200;
 
-
     translateY.value = withDelay(
-        animationDelay,
-        withTiming(10 * index, {
-          duration: 500, // 애니메이션 지속 시간
-          easing: Easing.out(Easing.ease),
-        })
-      );
-      opacity.value = withDelay(
-        animationDelay,
-        withTiming(1, {
-          duration: 500,
-          easing: Easing.out(Easing.ease),
-        })
-      );
+      animationDelay,
+      withTiming(10 * index, {
+        duration: 500, // 애니메이션 지속 시간
+        easing: Easing.out(Easing.ease),
+      })
+    );
+    opacity.value = withDelay(
+      animationDelay,
+      withTiming(1, {
+        duration: 500,
+        easing: Easing.out(Easing.ease),
+      })
+    );
   }, [index, scale, translateY, opacity]);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -88,7 +87,7 @@ const NextCard = ({ song, index }: { song: Song; index: number }) => {
   }));
 
   return (
-    <Animated.View style={[styles.card, animatedStyle]}>
+    <Animated.View style={[styles.nextCard, animatedStyle]}>
       <Card>
         <Card.Content>
           <Title>{song.title}</Title>
@@ -175,47 +174,47 @@ export default function MusicWorldcupScreen({ categoryId, onClose }: MusicWorldc
     translateX.value = 0;
     translateY.value = 0;
     rotation.value = withTiming(0, {
-        duration: 200,
-        easing: Easing.out(Easing.ease),
-      });
-      backgroundProgress.value = withTiming(0, {
-        duration: 500,
-        easing: Easing.out(Easing.ease),
-      });
+      duration: 200,
+      easing: Easing.out(Easing.ease),
+    });
+    backgroundProgress.value = withTiming(0, {
+      duration: 500,
+      easing: Easing.out(Easing.ease),
+    });
 
-      // YES 아이콘이 서서히 사라지도록 지연 추가
-      opacityYes.value = withDelay(
-        500, // 500ms 지연
-        withTiming(0, {
-          duration: 500, // 서서히 사라지는 시간
-          easing: Easing.out(Easing.ease),
-        })
-      );
+    // YES 아이콘이 서서히 사라지도록 지연 추가
+    opacityYes.value = withDelay(
+      500, // 500ms 지연
+      withTiming(0, {
+        duration: 500, // 서서히 사라지는 시간
+        easing: Easing.out(Easing.ease),
+      })
+    );
 
-      // NO 아이콘이 서서히 사라지도록 지연 추가
-      opacityNo.value = withDelay(
-        500, // 500ms 지연
-        withTiming(0, {
-          duration: 500, // 서서히 사라지는 시간
-          easing: Easing.out(Easing.ease),
-        })
-      );
-  opacity.value = withDelay(
-          500, // 500ms 지연
-          withTiming(0, {
-            duration: 500, // 서서히 사라지는 시간
-            easing: Easing.out(Easing.ease),
-          })
-        );
+    // NO 아이콘이 서서히 사라지도록 지연 추가
+    opacityNo.value = withDelay(
+      500, // 500ms 지연
+      withTiming(0, {
+        duration: 500, // 서서히 사라지는 시간
+        easing: Easing.out(Easing.ease),
+      })
+    );
+    opacity.value = withDelay(
+      500, // 500ms 지연
+      withTiming(0, {
+        duration: 500, // 서서히 사라지는 시간
+        easing: Easing.out(Easing.ease),
+      })
+    );
     backgroundProgress.value = withSpring(0, { damping: 20, stiffness: 200 });
 
     scale.value = withDelay(
-            1000,
-            withTiming(1, {
-              duration: 10000, // 서서히 사라지는 시간
-              easing: Easing.out(Easing.ease),
-            })
-          );
+      1000,
+      withTiming(1, {
+        duration: 10000, // 서서히 사라지는 시간
+        easing: Easing.out(Easing.ease),
+      })
+    );
   }, []);
 
   // 스와이프 처리 함수 (결과를 로컬 상태에 저장)
@@ -335,11 +334,11 @@ export default function MusicWorldcupScreen({ categoryId, onClose }: MusicWorldc
       } else {
         // 원래 위치로 복귀
         translateX.value = withSpring(0, { damping: 25, stiffness: 100 });
-            translateY.value = withSpring(0, { damping: 25, stiffness: 100 });
-            rotation.value = withSpring(0, { damping: 25, stiffness: 100 });
-            opacityYes.value = withSpring(0, { damping: 25, stiffness: 100 });
-            opacityNo.value = withSpring(0, { damping: 25, stiffness: 100 });
-            backgroundProgress.value = withSpring(0, { damping: 25, stiffness: 100 });
+        translateY.value = withSpring(0, { damping: 25, stiffness: 100 });
+        rotation.value = withSpring(0, { damping: 25, stiffness: 100 });
+        opacityYes.value = withSpring(0, { damping: 25, stiffness: 100 });
+        opacityNo.value = withSpring(0, { damping: 25, stiffness: 100 });
+        backgroundProgress.value = withSpring(0, { damping: 25, stiffness: 100 });
       }
     },
   });
@@ -503,12 +502,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5', // 추가된 부분
-    justifyContent: 'center',
+    justifyContent: 'flex-start', // 'center'에서 'flex-start'로 변경하여 위로 이동
     alignItems: 'center',
+    paddingTop: 50, // 상단 여백 추가
   },
   iconContainer: {
     position: 'absolute',
-    top: '40%', // 화면 중앙에 위치하도록 조정
+    top: '30%', // 화면 중앙보다 조금 위로 조정
     left: 0,
     right: 0,
     alignItems: 'center',
@@ -549,18 +549,22 @@ const styles = StyleSheet.create({
   },
   */
   resultText: {
+      marginTop: -100,
     fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 30,
+    color: '#333',
   },
   resultSubtitle: {
     fontSize: 16,
     marginBottom: 10,
+    color: '#333',
   },
   likedSong: {
-      marginTop: 5,
+    marginTop: 5,
     fontSize: 16,
     marginVertical: 2,
+    color: '#555',
   },
   backButton: {
     marginTop: 20,
@@ -571,13 +575,13 @@ const styles = StyleSheet.create({
     width: '70%',
     alignItems: 'center',
     shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 3.84,
-        elevation: 3, // Android용 그림자
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3.84,
+    elevation: 3, // Android용 그림자
   },
   restartButton: {
-    marginTop: 10,
+    marginTop: 30,
     backgroundColor: '#FFF',
     paddingVertical: 10,
     paddingHorizontal: 20,
@@ -585,10 +589,10 @@ const styles = StyleSheet.create({
     width: '60%',
     alignItems: 'center',
     shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 3.84,
-        elevation: 3, // Android용 그림자
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3.84,
+    elevation: 3, // Android용 그림자
   },
   backButtonText: {
     color: '#FFFFFF',
@@ -596,10 +600,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   backButtonText2: {
-      color: '#6200ee',
-      fontSize: 16,
-      fontWeight: 'bold',
-    },
+    color: '#6200ee',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
 
   card: {
     width: SCREEN_WIDTH * 0.9,
@@ -612,15 +616,31 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     height: SCREEN_HEIGHT * 0.7,
+    top: '10%', // 카드 위치를 위로 올리기 위한 추가
+  },
+  nextCard: { // 수정: styles.card을 styles.nextCard로 변경
+    width: SCREEN_WIDTH * 0.9,
+    position: 'absolute',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5, // Android 그림자
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    height: SCREEN_HEIGHT * 0.6,
+    top: '15%', // 다음 트랙 카드의 위치 조정
   },
   paperCard: {
     borderRadius: 20, // 카드 곡률
     overflow: 'hidden',
     flex: 1, // 카드 내용이 공간을 채우도록 설정
+    backgroundColor: '#FFFFFF',
   },
   cardTitle: {
     fontSize: 22,
     fontWeight: 'bold',
+    color: '#333',
   },
   cardArtist: {
     fontSize: 16,

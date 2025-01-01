@@ -11,7 +11,8 @@ import {
 import { db } from '../firebaseConfig'; // Firestore 초기화 파일
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import AnimatedThumbnail from '../components/AnimatedThumbnail';
-import { useFocusEffect } from '@react-navigation/native'; // 추가: useFocusEffect 임포트
+import { useFocusEffect } from '@react-navigation/native'; // useFocusEffect 임포트
+import AnimatedScreen from '../components/AnimatedScreen'; // AnimatedScreen 임포트
 
 interface Song {
   id: string;
@@ -104,18 +105,20 @@ const ProfileScreen: React.FC = () => {
   }
 
   return (
-    <View style={styles.container}>
-      {/* 헤더 추가 */}
-      <Text style={styles.header}>지금 인기있는 음악</Text>
+    <AnimatedScreen animationType="fade">
+      <ScrollView contentContainerStyle={styles.container}>
+        {/* 헤더를 ScrollView 내부로 이동 */}
+        <Text style={styles.header}>내가 좋아한 음악</Text>
 
-      <ScrollView contentContainerStyle={styles.galleryContainer}>
-        <View style={styles.grid}>
-          {songs.map((item, index) => (
-            <AnimatedThumbnail key={item.id} item={item} index={index} />
-          ))}
+        <View style={styles.galleryContainer}>
+          <View style={styles.grid}>
+            {songs.map((item, index) => (
+              <AnimatedThumbnail key={item.id} item={item} index={index} />
+            ))}
+          </View>
         </View>
       </ScrollView>
-    </View>
+    </AnimatedScreen>
   );
 };
 
@@ -127,11 +130,10 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   container: {
-    flex: 1,
     paddingTop: 10,
     paddingLeft: 10,
     paddingRight: 10,
-    paddingBottom: 0,
+    paddingBottom: 20, // 아래 여백 추가
   },
   grid: {
     flexDirection: 'row',
