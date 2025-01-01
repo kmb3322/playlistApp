@@ -1,6 +1,6 @@
 // HomeScreenComponent.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Text,
   View,
@@ -16,6 +16,8 @@ import {
   Animated,
   ActivityIndicator,
   Dimensions,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Swipeable } from 'react-native-gesture-handler';
@@ -221,25 +223,8 @@ const HomeScreenComponent: React.FC = () => {
     }).start();
   };
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#6200ee" />
-        <Text style={styles.loadingText}>로딩 중...</Text>
-      </View>
-    );
-  }
-
-  if (songs.length === 0) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text>노래가 없습니다.</Text>
-      </View>
-    );
-  }
-
-  // Define the header component to be included in FlatList
-  const renderListHeader = () => (
+  // Memoize the header to prevent unnecessary re-renders
+  const renderHeader = useCallback(() => (
     <View style={styles.headerWrapper}>
       {randomSong && (
         <ImageBackground
@@ -283,16 +268,39 @@ const HomeScreenComponent: React.FC = () => {
         </ImageBackground>
       )}
     </View>
-  );
+  ), [randomSong, searchText, shuffleSongs]);
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#6200ee" />
+        <Text style={styles.loadingText}>로딩 중...</Text>
+      </View>
+    );
+  }
+
+  if (songs.length === 0) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text>노래가 없습니다.</Text>
+      </View>
+    );
+  }
 
   return (
     <AnimatedScreen>
-      <View style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        {/* Header */}
+        {renderHeader()}
+
         {/* Music List */}
         <FlatList
           data={filteredSongs}
           keyExtractor={(item) => item.youtubeId}
-          ListHeaderComponent={renderListHeader} // Include header here
+          // Removed ListHeaderComponent to prevent re-rendering issues
           contentContainerStyle={styles.listContent} // Added padding at the end
           renderItem={({ item, index }) => (
             <Swipeable
@@ -383,7 +391,7 @@ const HomeScreenComponent: React.FC = () => {
             </View>
           </View>
         </Modal>
-      </View>
+      </KeyboardAvoidingView>
     </AnimatedScreen>
   );
 };
@@ -429,12 +437,12 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom:-5,
+    marginBottom: -5,
   },
   title2: {
     fontSize: 30,
     fontWeight: 'bold',
-    marginBottom:-10,
+    marginBottom: -10,
     color: '#fff',
   },
   shuffleButton: {

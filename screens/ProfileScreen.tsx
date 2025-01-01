@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingLeft: 10,
     paddingRight: 10,
-    paddingBottom: 20, // 아래 여백 추가
+    paddingBottom: 80, // 아래 여백 추가
   },
   grid: {
     flexDirection: 'row',
