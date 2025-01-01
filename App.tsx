@@ -1,6 +1,7 @@
 // App.tsx
+
 import * as React from 'react';
-import { StyleSheet, View, TouchableOpacity, Animated, Dimensions } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Animated, Dimensions, Keyboard, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -18,6 +19,7 @@ const Tab = createBottomTabNavigator();
 const MyTabBar = ({ state, descriptors, navigation }) => {
   const [translateX] = React.useState(new Animated.Value(0));
   const [tabWidth, setTabWidth] = React.useState((Dimensions.get('window').width - 40) / state.routes.length);
+  const [isKeyboardVisible, setKeyboardVisible] = React.useState(false);
 
   React.useEffect(() => {
     Animated.spring(translateX, {
@@ -33,6 +35,32 @@ const MyTabBar = ({ state, descriptors, navigation }) => {
     const { width } = event.nativeEvent.layout;
     setTabWidth(width / state.routes.length);
   };
+
+  // 키보드 이벤트 리스너 등록
+  React.useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => {
+        setKeyboardVisible(true);
+      }
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardVisible(false);
+      }
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
+
+  if (isKeyboardVisible) {
+    // 키보드가 열려있을 때 탭 바 숨기기
+    return null;
+  }
 
   return (
     <View style={styles.tabBarContainer} onLayout={onLayout}>
@@ -93,7 +121,7 @@ const MyTabBar = ({ state, descriptors, navigation }) => {
               accessibilityState={isFocused ? { selected: true } : {}}
               accessibilityLabel={options.tabBarAccessibilityLabel}
               testID={options.tabBarTestID}
-              key={index}
+              key={route.key} // Use route.key for unique key
               onPress={onPress}
               onLongPress={onLongPress}
               style={styles.tabButton}

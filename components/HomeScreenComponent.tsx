@@ -1,6 +1,6 @@
 // HomeScreenComponent.tsx
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import {
   Text,
   View,
@@ -15,7 +15,6 @@ import {
   Modal,
   Animated,
   ActivityIndicator,
-  Dimensions,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -37,6 +36,123 @@ interface Song {
   isYES: boolean;
 }
 
+// Props for SongItem component
+interface SongItemProps {
+  song: Song;
+  onDelete: (songId: string) => void;
+}
+
+// SongItem Component
+const SongItem: React.FC<SongItemProps> = ({ song, onDelete }) => {
+  const [swipeProgress] = useState(new Animated.Value(0));
+  let swipeableRef: Swipeable | null = null;
+
+  // Render the delete action
+  const renderRightActions = () => (
+    <Animated.View style={[styles.deleteButton, { opacity: swipeProgress }]}>
+      <TouchableOpacity
+        style={styles.deleteButtonTouchable}
+        onPress={() => {
+          onDelete(song.id);
+          swipeableRef?.close();
+        }}
+      >
+        <Icon name="trash" size={30} color="#fff" />
+      </TouchableOpacity>
+    </Animated.View>
+  );
+
+  // Handle swipe progress animation
+  const handleSwipeProgress = (progress: number) => {
+    Animated.timing(swipeProgress, {
+      toValue: progress,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  // Handle music item click
+  const handleMusicClick = (url: string) => {
+    Linking.openURL(url).catch((err) => {
+      console.error('Failed to open URL:', err);
+      Alert.alert('Error', 'URL을 여는 데 실패했습니다.');
+    });
+  };
+
+  return (
+    <Swipeable
+      ref={(ref) => (swipeableRef = ref)}
+      renderRightActions={renderRightActions}
+      onSwipeableWillOpen={() => handleSwipeProgress(1)}
+      onSwipeableWillClose={() => handleSwipeProgress(0)}
+    >
+      <TouchableOpacity onPress={() => handleMusicClick(getYouTubeUrl(song.youtubeId))}>
+        <View style={styles.item}>
+          <View style={styles.albumCover}>
+            <Image
+              source={{ uri: getYouTubeThumbnail(song.youtubeId) }}
+              style={styles.thumbnail}
+            />
+          </View>
+          <View style={styles.textContainer}>
+            <Text style={styles.musicTitle}>{song.title}</Text>
+            <Text style={styles.musicArtist}>{song.artist}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    </Swipeable>
+  );
+};
+
+// Memoized Header Component
+const Header = memo(({ randomSong, searchText, setSearchText, shuffleSongs }) => (
+  <View style={styles.headerWrapper}>
+    {randomSong && (
+      <ImageBackground
+        source={{ uri: getYouTubeThumbnail(randomSong.youtubeId) }}
+        style={styles.headerBackground}
+        imageStyle={styles.headerImage} // Apply scaling here
+        resizeMode="cover"
+      >
+        {/* Gradient overlay */}
+        <LinearGradient
+          colors={['rgba(0,0,0,0.6)', 'rgba(0,0,0,0.2)', 'transparent']}
+          style={styles.gradient}
+        >
+          {/* Header Content */}
+          <View style={styles.headerContainer}>
+            <Text style={styles.title}>지금 떠오르는</Text>
+
+            {/* Add Song Button */}
+            <TouchableOpacity style={styles.addButton} onPress={() => setIsModalVisible(true)}>
+              <Icon name="add" size={20} color="#fff" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.headerContainer2}>
+            <Text style={styles.title2}>{'\n'}음악 플레이리스트</Text>
+            {/* Shuffle Button */}
+            <TouchableOpacity style={styles.shuffleButton} onPress={shuffleSongs}>
+              <Icon name="shuffle" size={20} color="#fff" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Search Input */}
+          <TextInput
+            style={styles.searchInput}
+            placeholder="검색할 음악"
+            placeholderTextColor="#ccc"
+            value={searchText}
+            onChangeText={(text) => setSearchText(text)}
+            returnKeyType="search"
+            clearButtonMode="while-editing"
+          />
+        </LinearGradient>
+      </ImageBackground>
+    )}
+  </View>
+));
+
 const HomeScreenComponent: React.FC = () => {
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -46,11 +162,10 @@ const HomeScreenComponent: React.FC = () => {
   const [newSongArtist, setNewSongArtist] = useState('');
   const [newSongId, setNewSongId] = useState('');
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
-  const [selectedSongIndex, setSelectedSongIndex] = useState<number | null>(null);
-  const [swipeProgress, setSwipeProgress] = useState<Animated.Value[]>([]);
-  const swipeableRefs = React.useRef<Swipeable[]>([]);
+  const [selectedSongId, setSelectedSongId] = useState<string | null>(null);
   const [randomSong, setRandomSong] = useState<Song | null>(null); // New state for random song
 
+  // Fetch songs from Firestore
   useEffect(() => {
     const fetchSongs = async () => {
       try {
@@ -86,7 +201,6 @@ const HomeScreenComponent: React.FC = () => {
 
         const sortedSongs = [...allSongs].sort((a, b) => a.youtubeId.localeCompare(b.youtubeId));
         setSongs(sortedSongs);
-        setSwipeProgress(sortedSongs.map(() => new Animated.Value(0)));
 
         // Select a random song
         if (sortedSongs.length > 0) {
@@ -114,12 +228,8 @@ const HomeScreenComponent: React.FC = () => {
 
   // Shuffle songs
   const shuffleSongs = () => {
-    swipeableRefs.current.forEach((swipeable) => {
-      if (swipeable != null) swipeable.close(); // Close any open swipeables
-    });
     const shuffledSongs = [...songs].sort(() => Math.random() - 0.5);
     setSongs(shuffledSongs);
-    setSwipeProgress(shuffledSongs.map(() => new Animated.Value(0)));
 
     // Reselect a random song after shuffling
     if (shuffledSongs.length > 0) {
@@ -128,35 +238,34 @@ const HomeScreenComponent: React.FC = () => {
     }
   };
 
-  // Open YouTube link
-  const handleMusicClick = (url: string) => {
-    Linking.openURL(url).catch((err) => {
-      console.error('Failed to open URL:', err);
-      Alert.alert('Error', 'URL을 여는 데 실패했습니다.');
-    });
+  // Handle music item deletion
+  const handleDeleteSong = (songId: string) => {
+    setSelectedSongId(songId);
+    setIsDeleteModalVisible(true);
   };
 
-  // Delete song
-  const handleDeleteSong = () => {
-    if (selectedSongIndex === null) return;
+  // Confirm deletion of a song
+  const confirmDeleteSong = () => {
+    if (selectedSongId === null) return;
 
-    setSwipeProgress((prevProgress) => {
-      const updatedProgress = [...prevProgress];
-      updatedProgress.splice(selectedSongIndex, 1); // Reset progress for deleted item
-      return updatedProgress;
-    });
+    setSongs((prevSongs) => prevSongs.filter((song) => song.id !== selectedSongId));
 
-    setSongs((prevSongs) => {
-      const updatedSongs = [...prevSongs];
-      updatedSongs.splice(selectedSongIndex, 1);
-      return updatedSongs;
-    });
+    // If the deleted song was the randomSong, reset it
+    if (randomSong?.id === selectedSongId) {
+      const remainingSongs = songs.filter(song => song.id !== selectedSongId);
+      if (remainingSongs.length > 0) {
+        const randomIndex = Math.floor(Math.random() * remainingSongs.length);
+        setRandomSong(remainingSongs[randomIndex]);
+      } else {
+        setRandomSong(null);
+      }
+    }
 
     setIsDeleteModalVisible(false);
-    setSelectedSongIndex(null);
+    setSelectedSongId(null);
   };
 
-  // Add new song
+  // Add new song to the list
   const handleAddSong = () => {
     if (newSongTitle.trim() && newSongArtist.trim() && newSongId.trim()) {
       if (songs.some((song) => song.youtubeId === newSongId)) {
@@ -164,7 +273,7 @@ const HomeScreenComponent: React.FC = () => {
         return;
       }
       const newSong: Song = {
-        id: (songs.length + 1).toString(),
+        id: (songs.length + 1).toString(), // Consider using unique IDs like UUID
         title: newSongTitle,
         artist: newSongArtist,
         youtubeId: newSongId,
@@ -172,7 +281,6 @@ const HomeScreenComponent: React.FC = () => {
         isYES: false,
       };
       setSongs((prevSongs) => [...prevSongs, newSong]);
-      setSwipeProgress((prevSwipeProgress) => [...prevSwipeProgress, new Animated.Value(0)]);
       setNewSongTitle('');
       setNewSongArtist('');
       setNewSongId('');
@@ -185,9 +293,10 @@ const HomeScreenComponent: React.FC = () => {
     }
   };
 
+  // Cancel deletion modal
   const handleCancelDelete = () => {
     setIsDeleteModalVisible(false);
-    setSelectedSongIndex(null);
+    setSelectedSongId(null);
   };
 
   // Cancel adding song
@@ -197,78 +306,6 @@ const HomeScreenComponent: React.FC = () => {
     setNewSongId('');
     setIsModalVisible(false);
   };
-
-  // Render swipeable delete action
-  const renderRightActions = (index: number) => {
-    return (
-      <Animated.View style={[styles.deleteButton, { opacity: swipeProgress[index] }]}>
-        <TouchableOpacity
-          style={styles.deleteButtonTouchable}
-          onPress={() => {
-            setSelectedSongIndex(index);
-            setIsDeleteModalVisible(true);
-          }}
-        >
-          <Icon name="trash" size={30} color="#fff" />
-        </TouchableOpacity>
-      </Animated.View>
-    );
-  };
-
-  const handleSwipeProgress = (index: number, progress: number) => {
-    Animated.timing(swipeProgress[index], {
-      toValue: progress, // Animate based on swipe progress
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  // Memoize the header to prevent unnecessary re-renders
-  const renderHeader = useCallback(() => (
-    <View style={styles.headerWrapper}>
-      {randomSong && (
-        <ImageBackground
-          source={{ uri: getYouTubeThumbnail(randomSong.youtubeId) }}
-          style={styles.headerBackground}
-          imageStyle={styles.headerImage} // Apply scaling here
-          resizeMode="cover"
-        >
-          {/* Gradient overlay */}
-          <LinearGradient
-            colors={['rgba(0,0,0,0.6)', 'rgba(0,0,0,0.2)', 'transparent']}
-            style={styles.gradient}
-          >
-            {/* Header Content */}
-            <View style={styles.headerContainer}>
-              <Text style={styles.title}>지금 떠오르는</Text>
-
-              {/* Add Song Button */}
-              <TouchableOpacity style={styles.addButton} onPress={() => setIsModalVisible(true)}>
-                <Icon name="add" size={20} color="#fff" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.headerContainer2}>
-              <Text style={styles.title2}>{'\n'}음악 플레이리스트</Text>
-              {/* Shuffle Button */}
-              <TouchableOpacity style={styles.shuffleButton} onPress={shuffleSongs}>
-                <Icon name="shuffle" size={20} color="#fff" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Search Input */}
-            <TextInput
-              style={styles.searchInput}
-              placeholder="검색할 음악"
-              placeholderTextColor="#ccc"
-              value={searchText}
-              onChangeText={(text) => setSearchText(text)}
-            />
-          </LinearGradient>
-        </ImageBackground>
-      )}
-    </View>
-  ), [randomSong, searchText, shuffleSongs]);
 
   if (loading) {
     return (
@@ -291,40 +328,26 @@ const HomeScreenComponent: React.FC = () => {
     <AnimatedScreen>
       <KeyboardAvoidingView
         style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0} // Adjust if necessary
       >
-        {/* Header */}
-        {renderHeader()}
-
-        {/* Music List */}
+        {/* Music List with Header as ListHeaderComponent */}
         <FlatList
           data={filteredSongs}
-          keyExtractor={(item) => item.youtubeId}
-          // Removed ListHeaderComponent to prevent re-rendering issues
+          keyExtractor={(item) => item.id} // Ensure unique keys
+          ListHeaderComponent={
+            <Header
+              randomSong={randomSong}
+              searchText={searchText}
+              setSearchText={setSearchText}
+              shuffleSongs={shuffleSongs}
+            />
+          } // 헤더를 FlatList의 ListHeaderComponent로 추가
           contentContainerStyle={styles.listContent} // Added padding at the end
-          renderItem={({ item, index }) => (
-            <Swipeable
-              ref={(ref) => (swipeableRefs.current[index] = ref as Swipeable)}
-              renderRightActions={() => renderRightActions(index)}
-              onSwipeableWillOpen={() => handleSwipeProgress(index, 1)} // Start animation on swipe open
-              onSwipeableWillClose={() => handleSwipeProgress(index, 0)} // End animation on swipe close
-            >
-              <TouchableOpacity onPress={() => handleMusicClick(getYouTubeUrl(item.youtubeId))}>
-                <View style={styles.item}>
-                  <View style={styles.albumCover}>
-                    <Image
-                      source={{ uri: getYouTubeThumbnail(item.youtubeId) }}
-                      style={styles.thumbnail}
-                    />
-                  </View>
-                  <View style={styles.textContainer}>
-                    <Text style={styles.musicTitle}>{item.title}</Text>
-                    <Text style={styles.musicArtist}>{item.artist}</Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            </Swipeable>
+          renderItem={({ item }) => (
+            <SongItem song={item} onDelete={handleDeleteSong} />
           )}
+          keyboardShouldPersistTaps="handled" // Allow tapping outside to dismiss keyboard
         />
 
         {/* Add Song Modal */}
@@ -384,7 +407,7 @@ const HomeScreenComponent: React.FC = () => {
                 <TouchableOpacity style={styles.cancelButton} onPress={handleCancelDelete}>
                   <Text style={styles.cancelButtonText}>취소</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.saveButton} onPress={handleDeleteSong}>
+                <TouchableOpacity style={styles.saveButton} onPress={confirmDeleteSong}>
                   <Text style={styles.saveButtonText}>삭제하기</Text>
                 </TouchableOpacity>
               </View>
