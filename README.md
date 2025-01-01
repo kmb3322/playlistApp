@@ -2,7 +2,6 @@
 [playlistWorldcup 1.4.apk](https://drive.google.com/file/d/1wHGHc1y4lemyoJgAYFa87R5IxlCFRZUP/view?usp=sharing)
 
 
-**실행 전, firebase 연결을 위해 firebaseConfig.ts 파일을 루트 디렉토리에 생성하세요.**
 
 # Outline
 
@@ -92,6 +91,8 @@
 - 일정 횟수 이상 선택된 음악은 이미지 크기가 커집니다.
 
 **playlistWorldcup은, React-Native로 제작되었습니다. 구동 방법은 다음과 같습니다.**
+**실행 전, firebase 연결을 위해 firebaseConfig.ts 파일을 루트 디렉토리에 생성하세요.**
+
 
 ## Step 1: Start the Metro Server
 
