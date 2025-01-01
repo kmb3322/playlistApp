@@ -26,7 +26,9 @@
 
 ---
 
-**Front-end** : React native
+**Front-end** : React-Native
+
+**Back-end** : Firestore Database
 
 **IDE** : Android Studio
 
