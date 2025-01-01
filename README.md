@@ -46,8 +46,11 @@
 - 탭 전환 시 애니메이션 효과를 추가하여 부드러운 탭 간 전환을 경험하도록 했습니다.
 
 ### Tab1: 플레이리스트
+<img width="505" alt="Screenshot 2025-01-01 at 17 51 46" src="https://github.com/user-attachments/assets/9b93ca2b-05ab-418d-a0ac-ff000a86c117" />
+<img width="507" alt="Screenshot 2025-01-01 at 17 53 51" src="https://github.com/user-attachments/assets/0fcdbd1a-d308-47b5-8f27-f3eeae065bab" />
+<img width="506" alt="Screenshot 2025-01-01 at 17 54 18" src="https://github.com/user-attachments/assets/0c698ff4-a2a8-4dfc-8463-32035bf4b0bf" />
 
-![홈화면.gif](https://prod-files-secure.s3.us-west-2.amazonaws.com/f6cb388f-3934-47d6-9928-26d2e10eb0fc/49d1e4c7-b38a-4b5a-8bf8-ef3cdcfd92bc/%E1%84%92%E1%85%A9%E1%86%B7%E1%84%92%E1%85%AA%E1%84%86%E1%85%A7%E1%86%AB.gif)
+
 
 - firebase DB에서 `getDocs`로 음악 목록을 불러와 리스트로 보여줍니다.
 - `Linking.openURL`을 사용하여 각 음악들을 터치하면 해당 음악의 유튜브 링크가 재생됩니다.
@@ -58,7 +61,11 @@
 
 ### Tab2: 월드컵
 
-![월드컵 화면.gif](https://prod-files-secure.s3.us-west-2.amazonaws.com/f6cb388f-3934-47d6-9928-26d2e10eb0fc/43bcad6b-308f-4b1f-b56b-ce60b1246c64/%E1%84%8B%E1%85%AF%E1%86%AF%E1%84%83%E1%85%B3%E1%84%8F%E1%85%A5%E1%86%B8_%E1%84%92%E1%85%AA%E1%84%86%E1%85%A7%E1%86%AB.gif)
+<img width="507" alt="Screenshot 2025-01-01 at 17 52 17" src="https://github.com/user-attachments/assets/76c3f288-9017-4d25-8f7e-f67cae6af303" />
+<img width="506" alt="Screenshot 2025-01-01 at 17 52 40" src="https://github.com/user-attachments/assets/8548029a-4b65-4a88-b969-12dafcc6af30" />
+<img width="505" alt="Screenshot 2025-01-01 at 17 53 04" src="https://github.com/user-attachments/assets/37bfd0e8-ffc2-4830-bcba-f0eea0aa8ae5" />
+<img width="502" alt="Screenshot 2025-01-01 at 17 53 29" src="https://github.com/user-attachments/assets/3bdeb84c-c52f-412f-90e9-9d1c5f1d893e" />
+
 
 - 월드컵 화면에 처음 들어가면 플레이리스트를 선택하는 버튼들이 나타납니다.
 - 선택한 플레이리스트의 음악들로 월드컵을 진행하게 됩니다.
@@ -66,12 +73,14 @@
 - 플레이리스트의 모든 음악에 대해 YES/NO를 선택하고 나면, 내가 YES를 선택한 음악들의 리스트가 나타납니다.
 - 여기서 YES를 선택한 음악들을 count하여 Tab3의 이미지 노출 순서에 반영합니다.
 - 월드컵 다시 시작하기 버튼을 통해 현재 플레이리스트에서 월드컵을 다시 진행할 수 있고,
-
-        다른 플레이리스트 살펴보기 버튼을 통해 플레이리스트 선택 화면으로 돌아갈 수 있습니다.
+  다른 플레이리스트 살펴보기 버튼을 통해 플레이리스트 선택 화면으로 돌아갈 수 있습니다.
 
 ### Tab3: 탑스터
 
-![탑스터 화면.gif](https://prod-files-secure.s3.us-west-2.amazonaws.com/f6cb388f-3934-47d6-9928-26d2e10eb0fc/962ea3ec-f6e8-42f2-a34b-9e1ed95f554f/%E1%84%90%E1%85%A1%E1%86%B8%E1%84%89%E1%85%B3%E1%84%90%E1%85%A5_%E1%84%92%E1%85%AA%E1%84%86%E1%85%A7%E1%86%AB.gif)
+<img width="507" alt="Screenshot 2025-01-01 at 17 54 41" src="https://github.com/user-attachments/assets/f4c96ece-6a81-4e01-adfc-9b96508544a0" />
+<img width="510" alt="Screenshot 2025-01-01 at 17 55 26" src="https://github.com/user-attachments/assets/e3591309-2508-4c48-ac64-443947786315" />
+<img width="506" alt="Screenshot 2025-01-01 at 17 55 42" src="https://github.com/user-attachments/assets/f96ab0eb-3d8a-4eab-b161-6aee499ab0c1" />
+
 
 - 월드컵에서 가장 많이 선택한 음악 순서대로 앨범 커버 이미지가 정렬되어 나타납니다.
 - 이미지 로딩에 부드러운 느낌을 주기 위해, `fade`애니메이션을 적용하여 상위 이미지부터 서서히  노출되도록 구현하였습니다.
