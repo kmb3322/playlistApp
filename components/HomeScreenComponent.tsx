@@ -140,7 +140,7 @@ const Header = memo(({ randomSong, searchText, setSearchText, shuffleSongs }) =>
           {/* Search Input */}
           <TextInput
             style={styles.searchInput}
-            placeholder="검색할 음악"
+            placeholder="검색할 음악 또는 가수명"
             placeholderTextColor="#ccc"
             value={searchText}
             onChangeText={(text) => setSearchText(text)}
