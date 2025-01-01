@@ -1,3 +1,7 @@
+**APK 다운로드**
+[playlistWorldcup 1.4.apk](https://drive.google.com/file/d/1wHGHc1y4lemyoJgAYFa87R5IxlCFRZUP/view?usp=sharing)
+
+
 **실행 전, firebase 연결을 위해 firebaseConfig.ts 파일을 루트 디렉토리에 생성하세요.**
 
 # Outline
