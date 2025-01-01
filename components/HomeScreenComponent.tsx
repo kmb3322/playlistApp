@@ -105,7 +105,7 @@ const SongItem: React.FC<SongItemProps> = ({ song, onDelete }) => {
 };
 
 // Memoized Header Component
-const Header = memo(({ randomSong, searchText, setSearchText, shuffleSongs }) => (
+const Header = memo(({ randomSong, searchText, setSearchText, shuffleSongs, setIsModalVisible }) => (
   <View style={styles.headerWrapper}>
     {randomSong && (
       <ImageBackground
@@ -341,6 +341,7 @@ const HomeScreenComponent: React.FC = () => {
               searchText={searchText}
               setSearchText={setSearchText}
               shuffleSongs={shuffleSongs}
+              setIsModalVisible={setIsModalVisible}
             />
           } // 헤더를 FlatList의 ListHeaderComponent로 추가
           contentContainerStyle={styles.listContent} // Added padding at the end
